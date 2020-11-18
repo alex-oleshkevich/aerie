@@ -3,17 +3,21 @@ from __future__ import annotations
 import typing as t
 
 
-class SQLBuilder(t.Protocol):
-    def get_sql(self) -> str: ...
+class Stringable(t.Protocol):
+    def __str__(self) -> str: ...
 
 
-Queryable = t.Union[str, SQLBuilder]
+Queryable = t.Union[str, Stringable]
 
 
 class Connection(t.Protocol):
+    async def acquire(self) -> Connection: ...
+
+    async def release(self) -> None: ...
+
     async def execute(self, stmt: str, params: t.Mapping = None) -> t.Any: ...
 
-    async def execute_many(
+    async def execute_all(
             self, stmt: str, params: t.List[t.Mapping] = None,
     ) -> t.Any: ...
 
@@ -25,8 +29,11 @@ class Connection(t.Protocol):
             self, stmt: str, params: t.Mapping = None,
     ) -> t.List[t.Mapping]: ...
 
-    async def fetch_val(self, stmt: str,
-                        params: t.Mapping = None) -> t.Any: ...
+    async def fetch_val(
+            self, stmt: str,
+            params: t.Mapping = None,
+            column: t.Any = 0,
+    ) -> t.Any: ...
 
     async def iterate(
             self, stmt: str, params: t.Mapping = None,
@@ -34,12 +41,20 @@ class Connection(t.Protocol):
 
     def transaction(self) -> Transaction: ...
 
+    async def __aenter__(self) -> Connection: ...
+
+    async def __aexit__(self, *args) -> None: ...
+
 
 Row = t.Mapping
 
 
 class Driver(t.Protocol):
-    async def connect(self) -> t.AsyncContextManager[Connection]: ...
+    async def connect(self): ...
+
+    async def disconnect(self): ...
+
+    def connection(self) -> Connection: ...
 
 
 class SavePoint(t.Protocol):
@@ -49,30 +64,20 @@ class SavePoint(t.Protocol):
 
     async def rollback(self) -> None: ...
 
-    async def __aenter__(self) -> SavePoint: ...
-
-    async def __aexit__(self, *args) -> None: ...
-
 
 class Transaction(t.Protocol):
-    async def begin(self) -> Transaction: ...
+    async def begin(self, is_root: bool = True) -> Transaction: ...
 
     async def commit(self) -> None: ...
 
     async def rollback(self) -> None: ...
-
-    async def savepoint(self, name: str = None) -> SavePoint: ...
-
-    async def __aenter__(self) -> Transaction: ...
-
-    async def __aexit__(self, *args) -> None: ...
 
 
 class BaseConnection:
     async def execute(self, stmt: str, params: t.Mapping = None) -> t.Any:
         raise NotImplementedError()
 
-    async def execute_many(
+    async def execute_all(
             self, stmt: str, params: t.List[t.Mapping] = None,
     ) -> t.Any:
         raise NotImplementedError()
@@ -82,18 +87,23 @@ class BaseConnection:
     ) -> t.Mapping:
         raise NotImplementedError()
 
+    async def fetch_val(
+            self, stmt: str, params: t.Mapping = None, column: t.Any = 0
+    ) -> t.Mapping:
+        row = await self.fetch_one(stmt, params)
+        return None if row is None else row[column]
+
     async def fetch_all(
             self, stmt: str, params: t.Mapping = None,
     ) -> t.List[t.Mapping]:
-        raise NotImplementedError()
-
-    async def fetch_val(self, stmt: str, params: t.Mapping = None) -> t.Any:
         raise NotImplementedError()
 
     async def iterate(
             self, stmt: str, params: t.Mapping = None,
     ) -> t.AsyncGenerator[t.Mapping, None]:
         raise NotImplementedError()
+        # noinspection PyUnreachableCode
+        yield True  # pragma: nocover
 
     def transaction(self) -> Transaction:
         raise NotImplementedError()
@@ -113,18 +123,9 @@ class BaseSavePoint:
     async def rollback(self):
         raise NotImplementedError()
 
-    async def __aenter__(self) -> SavePoint:
-        return await self.begin()
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        if exc_type:
-            await self.rollback()
-        else:
-            await self.commit()
-
 
 class BaseTransaction:
-    async def begin(self) -> Transaction:
+    async def begin(self, is_root: bool = True) -> Transaction:
         raise NotImplementedError()
 
     async def commit(self):
@@ -132,15 +133,3 @@ class BaseTransaction:
 
     async def rollback(self):
         raise NotImplementedError()
-
-    def savepoint(self, name: str = None) -> SavePoint:
-        raise NotImplementedError()
-
-    async def __aenter__(self) -> Transaction:
-        return await self.begin()
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        if exc_type:
-            await self.rollback()
-        else:
-            await self.commit()
