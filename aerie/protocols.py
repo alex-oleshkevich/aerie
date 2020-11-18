@@ -2,104 +2,148 @@ from __future__ import annotations
 
 import typing as t
 
+from aerie.url import URL
+
 
 class Stringable(t.Protocol):
-    def __str__(self) -> str: ...
+    def __str__(self) -> str:
+        ...
 
 
 Queryable = t.Union[str, Stringable]
 
 
 class Connection(t.Protocol):
-    async def acquire(self) -> Connection: ...
+    async def acquire(self) -> Connection:
+        ...
 
-    async def release(self) -> None: ...
+    async def release(self) -> None:
+        ...
 
-    async def execute(self, stmt: str, params: t.Mapping = None) -> t.Any: ...
+    async def execute(self, stmt: str, params: t.Optional[t.Mapping] = None) -> t.Any:
+        ...
 
     async def execute_all(
-            self, stmt: str, params: t.List[t.Mapping] = None,
-    ) -> t.Any: ...
+        self,
+        stmt: str,
+        params: t.Optional[t.List[t.Mapping]] = None,
+    ) -> t.Any:
+        ...
 
     async def fetch_one(
-            self, stmt: str, params: t.Mapping = None,
-    ) -> t.Mapping: ...
+        self,
+        stmt: str,
+        params: t.Optional[t.Mapping] = None,
+    ) -> t.Mapping:
+        ...
 
     async def fetch_all(
-            self, stmt: str, params: t.Mapping = None,
-    ) -> t.List[t.Mapping]: ...
+        self,
+        stmt: str,
+        params: t.Optional[t.Mapping] = None,
+    ) -> t.List[t.Mapping]:
+        ...
 
     async def fetch_val(
-            self, stmt: str,
-            params: t.Mapping = None,
-            column: t.Any = 0,
-    ) -> t.Any: ...
+        self,
+        stmt: str,
+        params: t.Optional[t.Mapping] = None,
+        column: t.Any = 0,
+    ) -> t.Any:
+        ...
 
     async def iterate(
-            self, stmt: str, params: t.Mapping = None,
-    ) -> t.AsyncGenerator[t.Mapping, None]: ...
+        self,
+        stmt: str,
+        params: t.Optional[t.Mapping] = None,
+    ) -> t.AsyncGenerator[t.Any, None]:
+        yield True  # mypy needs this
 
-    def transaction(self) -> Transaction: ...
+    def transaction(self) -> Transaction:
+        ...
 
-    async def __aenter__(self) -> Connection: ...
+    async def __aenter__(self) -> Connection:
+        ...
 
-    async def __aexit__(self, *args) -> None: ...
+    async def __aexit__(self, *args) -> None:
+        ...
 
 
-Row = t.Mapping
+class Row(t.Mapping):
+    pass
 
 
 class Driver(t.Protocol):
-    async def connect(self): ...
+    def __init__(self, url: URL):
+        ...
 
-    async def disconnect(self): ...
+    async def connect(self):
+        ...
 
-    def connection(self) -> Connection: ...
+    async def disconnect(self):
+        ...
+
+    def connection(self) -> Connection:
+        ...
 
 
 class SavePoint(t.Protocol):
-    async def begin(self) -> SavePoint: ...
+    async def begin(self) -> SavePoint:
+        ...
 
-    async def commit(self) -> None: ...
+    async def commit(self) -> None:
+        ...
 
-    async def rollback(self) -> None: ...
+    async def rollback(self) -> None:
+        ...
 
 
 class Transaction(t.Protocol):
-    async def begin(self, is_root: bool = True) -> Transaction: ...
+    async def begin(self, is_root: bool = True) -> Transaction:
+        ...
 
-    async def commit(self) -> None: ...
+    async def commit(self) -> None:
+        ...
 
-    async def rollback(self) -> None: ...
+    async def rollback(self) -> None:
+        ...
 
 
 class BaseConnection:
-    async def execute(self, stmt: str, params: t.Mapping = None) -> t.Any:
+    async def execute(self, stmt: str, params: t.Optional[t.Mapping] = None) -> t.Any:
         raise NotImplementedError()
 
     async def execute_all(
-            self, stmt: str, params: t.List[t.Mapping] = None,
+        self,
+        stmt: str,
+        params: t.Optional[t.List[t.Mapping]] = None,
     ) -> t.Any:
         raise NotImplementedError()
 
     async def fetch_one(
-            self, stmt: str, params: t.Mapping = None,
-    ) -> t.Mapping:
+        self,
+        stmt: str,
+        params: t.Optional[t.Mapping] = None,
+    ) -> t.Optional[t.Mapping]:
         raise NotImplementedError()
 
     async def fetch_val(
-            self, stmt: str, params: t.Mapping = None, column: t.Any = 0
-    ) -> t.Mapping:
+        self, stmt: str, params: t.Optional[t.Mapping] = None, column: t.Any = 0
+    ) -> t.Optional[t.Mapping]:
         row = await self.fetch_one(stmt, params)
         return None if row is None else row[column]
 
     async def fetch_all(
-            self, stmt: str, params: t.Mapping = None,
+        self,
+        stmt: str,
+        params: t.Optional[t.Mapping] = None,
     ) -> t.List[t.Mapping]:
         raise NotImplementedError()
 
     async def iterate(
-            self, stmt: str, params: t.Mapping = None,
+        self,
+        stmt: str,
+        params: t.Optional[t.Mapping] = None,
     ) -> t.AsyncGenerator[t.Mapping, None]:
         raise NotImplementedError()
         # noinspection PyUnreachableCode
