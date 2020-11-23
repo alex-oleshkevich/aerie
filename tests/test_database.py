@@ -107,8 +107,6 @@ async def test_queries(database_url):
             assert iterate_result[1]['name'] == 'user1'
             assert iterate_result[2]['name'] == 'user2'
 
-            print('HERE')
-
 
 @pytest.mark.parametrize("database_url", DATABASES)
 @pytest.mark.asyncio

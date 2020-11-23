@@ -6,7 +6,7 @@ import typing as t
 from types import TracebackType
 
 from aerie.exceptions import DriverNotRegistered
-from aerie.protocols import Driver, Queryable
+from aerie.protocols import BaseDriver, Queryable
 from aerie.url import URL
 from aerie.utils import import_string
 
@@ -14,7 +14,7 @@ E = t.TypeVar("E")
 
 
 class Database:
-    drivers: t.Dict[str, t.Union[str, t.Type[Driver]]] = {
+    drivers: t.Dict[str, t.Union[str, t.Type[BaseDriver]]] = {
         "sqlite": "aerie.drivers.sqlite.SQLiteDriver",
         "postgres": "aerie.drivers.postgresql.PostgresDriver",
         "postgresql": "aerie.drivers.postgresql.PostgresDriver",
@@ -110,7 +110,7 @@ class Database:
     async def disconnect(self) -> None:
         await self.driver.disconnect()
 
-    def create_driver(self) -> Driver:
+    def create_driver(self) -> BaseDriver:
         if self.url.scheme not in self.drivers:
             raise DriverNotRegistered(
                 f'No driver for scheme "{self.url.scheme}". '
@@ -146,7 +146,7 @@ class Database:
 
 
 class _Connection:
-    def __init__(self, driver: Driver) -> None:
+    def __init__(self, driver: BaseDriver) -> None:
         self._driver = driver
         self._connection = driver.connection()
         self._query_lock = asyncio.Lock()
@@ -173,7 +173,7 @@ class _Connection:
         self,
         stmt: str,
         params: t.Optional[t.Mapping] = None,
-    ) -> t.Mapping:
+    ) -> t.Optional[t.Mapping]:
         async with self._query_lock:
             return await self._connection.fetch_one(str(stmt), params)
 

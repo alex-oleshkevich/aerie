@@ -147,6 +147,7 @@ class PostgresDriver(BaseDriver):
         )
 
     async def disconnect(self) -> None:
+        assert self.pool, "Driver is not connected."
         await self.pool.close()
         self.pool = None
 
