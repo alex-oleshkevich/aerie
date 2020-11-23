@@ -59,7 +59,9 @@ class _Connection(BaseConnection):
         return await self._connection.fetchval(stmt, *args)
 
     async def execute_all(
-        self, stmt: str, params: t.Optional[t.List[t.Mapping]] = None,
+        self,
+        stmt: str,
+        params: t.Optional[t.List[t.Mapping]] = None,
     ) -> t.Any:
         assert self._connection is not None, "Connection is not acquired."
         _args = []
@@ -74,21 +76,27 @@ class _Connection(BaseConnection):
         return await self._connection.executemany(stmt, _args)
 
     async def fetch_one(
-        self, stmt: str, params: t.Optional[t.Mapping] = None,
+        self,
+        stmt: str,
+        params: t.Optional[t.Mapping] = None,
     ) -> t.Optional[t.Mapping]:
         assert self._connection is not None, "Connection is not acquired."
         stmt, args = self._replace_placeholders(stmt, params)
         return await self._connection.fetchrow(stmt, *args)
 
     async def fetch_all(
-        self, stmt: str, params: t.Optional[t.Mapping] = None,
+        self,
+        stmt: str,
+        params: t.Optional[t.Mapping] = None,
     ) -> t.List[t.Mapping]:
         assert self._connection is not None, "Connection is not acquired."
         stmt, args = self._replace_placeholders(stmt, params)
         return await self._connection.fetch(stmt, *args)
 
     async def iterate(
-        self, stmt: str, params: t.Optional[t.Mapping] = None,
+        self,
+        stmt: str,
+        params: t.Optional[t.Mapping] = None,
     ) -> t.AsyncGenerator[t.Any, None]:
         assert self._connection is not None, "Connection is not acquired."
         stmt, args = self._replace_placeholders(stmt, params)
@@ -111,7 +119,9 @@ class _Connection(BaseConnection):
         await self.release()
 
     def _replace_placeholders(
-        self, stmt: str, params: t.Optional[t.Mapping] = None,
+        self,
+        stmt: str,
+        params: t.Optional[t.Mapping] = None,
     ) -> t.Tuple[str, t.List]:
         args = []
         if params:
@@ -131,7 +141,10 @@ class PostgresDriver(BaseDriver):
         self.pool: t.Optional[asyncpg.pool.Pool] = None
 
     async def connect(self) -> None:
-        self.pool = asyncpg.create_pool(self.url.url, **self.url.options,)
+        self.pool = asyncpg.create_pool(
+            self.url.url,
+            **self.url.options,
+        )
 
     async def disconnect(self) -> None:
         await self.pool.close()
