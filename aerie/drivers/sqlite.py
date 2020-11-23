@@ -5,8 +5,7 @@ import uuid
 
 import aiosqlite
 
-from aerie.protocols import (BaseConnection, BaseDriver, BaseSavePoint,
-                             BaseTransaction)
+from aerie.protocols import BaseConnection, BaseDriver, BaseSavePoint, BaseTransaction
 from aerie.url import URL
 
 
@@ -81,8 +80,7 @@ class _Connection(BaseConnection):
     async def release(self) -> None:
         await self._pool.release(self._connection)
 
-    async def execute(self, stmt: str,
-                      params: t.Optional[t.Mapping] = None) -> t.Any:
+    async def execute(self, stmt: str, params: t.Optional[t.Mapping] = None) -> t.Any:
         assert self._connection is not None, "Connection is not acquired."
         cursor = await self._connection.execute(stmt, params)
         if cursor.lastrowid == 0:
@@ -90,9 +88,7 @@ class _Connection(BaseConnection):
         return cursor.lastrowid
 
     async def execute_all(
-            self,
-            stmt: str,
-            params: t.Optional[t.List[t.Mapping]] = None,
+        self, stmt: str, params: t.Optional[t.List[t.Mapping]] = None,
     ) -> t.Any:
         assert self._connection is not None, "Connection is not acquired."
         async with self._connection.executemany(stmt, params) as cursor:
@@ -101,27 +97,21 @@ class _Connection(BaseConnection):
             return cursor.lastrowid
 
     async def fetch_one(
-            self,
-            stmt: str,
-            params: t.Optional[t.Mapping] = None,
+        self, stmt: str, params: t.Optional[t.Mapping] = None,
     ) -> t.Optional[t.Mapping]:
         assert self._connection is not None, "Connection is not acquired."
         async with self._connection.execute(stmt, params) as cursor:
             return await cursor.fetchone()
 
     async def fetch_all(
-            self,
-            stmt: str,
-            params: t.Optional[t.Mapping] = None,
+        self, stmt: str, params: t.Optional[t.Mapping] = None,
     ) -> t.List[t.Mapping]:
         assert self._connection is not None, "Connection is not acquired."
         async with self._connection.execute(stmt, params) as cursor:
             return await cursor.fetchall()
 
     async def iterate(
-            self,
-            stmt: str,
-            params: t.Optional[t.Mapping] = None,
+        self, stmt: str, params: t.Optional[t.Mapping] = None,
     ) -> t.AsyncGenerator[t.Any, None]:
         assert self._connection is not None, "Connection is not acquired."
         async with self._connection.execute(stmt, params) as cursor:

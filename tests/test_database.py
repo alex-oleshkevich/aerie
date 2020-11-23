@@ -24,7 +24,8 @@ async def create_database(database_url: URL):
         connection = await aiosqlite.connect(database_url.db_name)
         sql = (
             "create table if not exists users "
-            "(id integer primary key, name varchar(256))"
+            "(id integer primary key, name varchar(256), "
+            "data jsonb default '{}')"
         )
         await connection.execute(sql)
         await connection.close()
@@ -33,7 +34,7 @@ async def create_database(database_url: URL):
         connection = await asyncpg.connect(database_url.url)
         sql = (
             "create table if not exists public.users "
-            "(id serial primary key, name varchar(256))"
+            "(id serial primary key, name varchar(256), data json default '{}')"
         )
         await connection.execute(sql)
         await connection.close()
@@ -177,6 +178,96 @@ async def test_nested_transactions(database_url):
                     )
                     raise Exception()
         assert await db.fetch_val('select count(*) from users') == 1
+
+
+@pytest.mark.parametrize("database_url", DATABASES)
+@pytest.mark.asyncio
+async def test_transaction_manual_commit_control(database_url):
+    async with Database(database_url) as db:
+        async with db.transaction(force_rollback=True):
+            tx = db.transaction()
+            try:
+                await tx.begin()
+                await db.execute('insert into users (name) values (:name)', {
+                    'name': 'transaction_commit_manual'
+                })
+                await tx.commit()
+            except:  # pragma: nocover
+                await tx.rollback()
+
+            assert await db.fetch_one(
+                'select * from users where name = :name', {
+                    'name': 'transaction_commit_manual'
+                })
+
+
+@pytest.mark.parametrize("database_url", DATABASES)
+@pytest.mark.asyncio
+async def test_transaction_manual_rollback_control(database_url):
+    async with Database(database_url) as db:
+        async with db.transaction(force_rollback=True):
+            tx = db.transaction()
+            try:
+                await tx.begin()
+                await db.execute('insert into users (name) values (:name)', {
+                    'name': 'transaction_rollback_manual'
+                })
+                await tx.rollback()
+            except:  # pragma: nocover
+                await tx.rollback()
+
+            assert not await db.fetch_one(
+                'select * from users where name = :name', {
+                    'name': 'transaction_rollback_manual'
+                })
+
+
+@pytest.mark.parametrize("database_url", DATABASES)
+@pytest.mark.asyncio
+async def test_transaction_awaitable_transaction(database_url):
+    """Transaction must begin transaction when awaiting the transaction object."""
+    async with Database(database_url) as db:
+        async with db.transaction(force_rollback=True):
+            tx = await db.transaction()
+            try:
+                await db.execute('insert into users (name) values (:name)', {
+                    'name': 'transaction_await_manual'
+                })
+                await tx.rollback()
+            except:  # pragma: nocover
+                await tx.rollback()
+
+            assert not await db.fetch_one(
+                'select * from users where name = :name', {
+                    'name': 'transaction_await_manual'
+                })
+
+
+@pytest.mark.parametrize("database_url", DATABASES)
+@pytest.mark.asyncio
+async def test_transaction_rollbacks_forcibly(database_url):
+    """It must always rollback the transaction if `force_rollback` is True."""
+    async with Database(database_url) as db:
+        async with db.transaction(force_rollback=True):
+            async with db.transaction(force_rollback=True):
+                await db.execute('insert into users (name) values (:name)', {
+                    'name': 'transaction_force_rollback'
+                })
+
+            assert not await db.fetch_one(
+                'select * from users where name = :name', {
+                    'name': 'transaction_force_rollback'
+                })
+
+
+@pytest.mark.parametrize("database_url", DATABASES)
+@pytest.mark.asyncio
+async def test_fetch_one_returns_none(database_url):
+    async with Database(database_url) as db:
+        async with db.transaction(force_rollback=True):
+            assert await db.fetch_one(
+                'select * from users where id = -1'
+            ) is None
 
 
 class _SampleDriver:

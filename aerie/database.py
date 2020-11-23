@@ -27,35 +27,25 @@ class Database:
             "connection"
         )
 
-    async def execute(
-        self,
-        stmt: Queryable,
-        params: dict = None,
-    ) -> t.Any:
+    async def execute(self, stmt: Queryable, params: dict = None,) -> t.Any:
         """Execute query with given params."""
         async with self.connection() as connection:
             return await connection.execute(stmt, params)
 
     async def execute_all(
-        self,
-        stmt: Queryable,
-        params: t.Optional[t.List[t.Mapping]] = None,
+        self, stmt: Queryable, params: t.Optional[t.List[t.Mapping]] = None,
     ) -> t.Any:
         async with self.connection() as connection:
             return await connection.execute_all(stmt, params)
 
     async def fetch_one(
-        self,
-        stmt: Queryable,
-        params: t.Optional[t.Mapping] = None,
+        self, stmt: Queryable, params: t.Optional[t.Mapping] = None,
     ) -> t.Any:
         async with self.connection() as connection:
             return await connection.fetch_one(str(stmt), params)
 
     async def fetch_all(
-        self,
-        stmt: Queryable,
-        params: t.Optional[t.Mapping] = None,
+        self, stmt: Queryable, params: t.Optional[t.Mapping] = None,
     ) -> t.Any:
         async with self.connection() as connection:
             return await connection.fetch_all(str(stmt), params)
@@ -70,15 +60,35 @@ class Database:
             return row[column]
 
     async def iterate(
-        self,
-        stmt: Queryable,
-        params: t.Optional[t.Mapping] = None,
+        self, stmt: Queryable, params: t.Optional[t.Mapping] = None,
     ) -> t.AsyncGenerator[t.Any, None]:
         async with self.connection() as connection:
             async for row in connection.iterate(str(stmt), params):
                 yield row
 
     def transaction(self, force_rollback: bool = False) -> _Transaction:
+        """Manages database transactions (if supported by the used driver).
+        It provides context manager interface and
+        therefore may be used with `async with` keywords.
+
+        >>> async with db.transaction():
+        >>> # do stuff
+
+        Also, for low-level control you can get a transaction instance
+        and control its lifecycle by hand.
+
+        >>> tx = db.transaction():
+        >>> await tx.begin()
+        >>> # do stuff
+        >>> await tx.commit()
+
+        There is a shortcut to begin the transaction when creating and object
+        to avoid boilerplate:
+
+        >>> tx = await db.transaction():
+        >>> # do stuff
+        >>> await tx.commit()
+        """
         return _Transaction(self.connection, force_rollback)
 
     async def connect(self) -> Database:
@@ -140,25 +150,19 @@ class _Connection:
             return await self._connection.execute(str(stmt), params)
 
     async def execute_all(
-        self,
-        stmt: Queryable,
-        params: t.Optional[t.List[t.Mapping]] = None,
+        self, stmt: Queryable, params: t.Optional[t.List[t.Mapping]] = None,
     ) -> t.Any:
         async with self._query_lock:
             return await self._connection.execute_all(str(stmt), params)
 
     async def fetch_one(
-        self,
-        stmt: str,
-        params: t.Optional[t.Mapping] = None,
+        self, stmt: str, params: t.Optional[t.Mapping] = None,
     ) -> t.Mapping:
         async with self._query_lock:
             return await self._connection.fetch_one(str(stmt), params)
 
     async def fetch_all(
-        self,
-        stmt: str,
-        params: t.Optional[t.Mapping] = None,
+        self, stmt: str, params: t.Optional[t.Mapping] = None,
     ) -> t.List[t.Mapping]:
         async with self._query_lock:
             return await self._connection.fetch_all(stmt, params)
@@ -170,9 +174,7 @@ class _Connection:
             return await self._connection.fetch_val(stmt, params, column)
 
     async def iterate(
-        self,
-        stmt: str,
-        params: t.Optional[t.Mapping] = None,
+        self, stmt: str, params: t.Optional[t.Mapping] = None,
     ) -> t.AsyncGenerator[t.Any, None]:
         async with self._query_lock:
             async for row in self._connection.iterate(stmt, params):
@@ -211,6 +213,7 @@ class _Transaction:
         return not self._connection.transaction_counter
 
     async def begin(self) -> _Transaction:
+        """Begin transaction."""
         async with self._connection.transaction_lock:
             await self._connection.__aenter__()
             await self._transaction.begin(self._is_root)
@@ -219,6 +222,7 @@ class _Transaction:
             return self
 
     async def commit(self) -> None:
+        """Commit the transaction."""
         async with self._connection.transaction_lock:
             self._connection.transaction_counter -= 1
             self._connection.transactions.remove(self)
@@ -226,11 +230,22 @@ class _Transaction:
             await self._connection.__aexit__(None, None, None)
 
     async def rollback(self) -> None:
+        """Rollback the transaction."""
         async with self._connection.transaction_lock:
             self._connection.transaction_counter -= 1
             self._connection.transactions.remove(self)
             await self._transaction.rollback()
             await self._connection.__aexit__(None, None, None)
+
+    def __await__(self) -> t.Generator:
+        """Creates new transaction instance and automatically begins it.
+        You still have to control commit() or rollback() calls.
+
+        Example:
+            tx = await db.transaction() # excutes BEGIN under the hood
+            tx.commit()
+        """
+        return self.begin().__await__()
 
     async def __aenter__(self) -> _Transaction:
         return await self.begin()
