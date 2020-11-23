@@ -16,6 +16,8 @@ E = t.TypeVar("E")
 class Database:
     drivers: t.Dict[str, t.Union[str, t.Type[Driver]]] = {
         "sqlite": "aerie.drivers.sqlite.SQLiteDriver",
+        "postgres": "aerie.drivers.postgresql.PostgresDriver",
+        "postgresql": "aerie.drivers.postgresql.PostgresDriver",
     }
 
     def __init__(self, url: t.Union[str, URL]) -> None:
@@ -76,8 +78,8 @@ class Database:
             async for row in connection.iterate(str(stmt), params):
                 yield row
 
-    def transaction(self) -> _Transaction:
-        return _Transaction(self.connection)
+    def transaction(self, force_rollback: bool = False) -> _Transaction:
+        return _Transaction(self.connection, force_rollback)
 
     async def connect(self) -> Database:
         await self.driver.connect()
@@ -172,10 +174,9 @@ class _Connection:
         stmt: str,
         params: t.Optional[t.Mapping] = None,
     ) -> t.AsyncGenerator[t.Any, None]:
-        async with self.transaction():
-            async with self._query_lock:
-                async for row in self._connection.iterate(stmt, params):
-                    yield row
+        async with self._query_lock:
+            async for row in self._connection.iterate(stmt, params):
+                yield row
 
     def transaction(self) -> _Transaction:
         return _Transaction(lambda: self)
@@ -196,9 +197,14 @@ class _Connection:
 
 
 class _Transaction:
-    def __init__(self, connection_factory: t.Callable[[], _Connection]) -> None:
+    def __init__(
+        self,
+        connection_factory: t.Callable[[], _Connection],
+        force_rollback: bool = False,
+    ) -> None:
         self._connection = connection_factory()
         self._transaction = self._connection._connection.transaction()
+        self._force_rollback = force_rollback
 
     @property
     def _is_root(self) -> bool:
@@ -209,17 +215,20 @@ class _Transaction:
             await self._connection.__aenter__()
             await self._transaction.begin(self._is_root)
             self._connection.transaction_counter += 1
+            self._connection.transactions.append(self)
             return self
 
     async def commit(self) -> None:
         async with self._connection.transaction_lock:
             self._connection.transaction_counter -= 1
+            self._connection.transactions.remove(self)
             await self._transaction.commit()
             await self._connection.__aexit__(None, None, None)
 
     async def rollback(self) -> None:
         async with self._connection.transaction_lock:
             self._connection.transaction_counter -= 1
+            self._connection.transactions.remove(self)
             await self._transaction.rollback()
             await self._connection.__aexit__(None, None, None)
 
@@ -232,7 +241,8 @@ class _Transaction:
         exc_val: BaseException,
         exc_tb: TracebackType,
     ) -> None:
-        if exc_type is not None:
-            await self.rollback()
-        else:
-            await self.commit()
+        if self in self._connection.transactions:
+            if exc_type is not None or self._force_rollback:
+                await self.rollback()
+            else:
+                await self.commit()

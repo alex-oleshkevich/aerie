@@ -5,7 +5,8 @@ import uuid
 
 import aiosqlite
 
-from aerie.protocols import BaseConnection, BaseSavePoint, BaseTransaction
+from aerie.protocols import (BaseConnection, BaseDriver, BaseSavePoint,
+                             BaseTransaction)
 from aerie.url import URL
 
 
@@ -24,93 +25,6 @@ class _Pool:
 
     async def release(self, connection: aiosqlite.Connection) -> None:
         await connection.__aexit__(None, None, None)
-
-
-class SQLiteDriver:
-    def __init__(self, url: URL) -> None:
-        self.url = url
-        self.pool = _Pool(url)
-
-    async def connect(self) -> None:
-        pass
-
-    async def disconnect(self) -> None:
-        pass
-
-    def connection(self) -> _Connection:
-        return _Connection(self.pool)
-
-
-class _Connection(BaseConnection):
-    def __init__(self, pool: _Pool) -> None:
-        self._pool = pool
-        self._connection: t.Optional[aiosqlite.Connection] = None
-
-    async def acquire(self) -> None:
-        self._connection = await self._pool.acquire()
-
-    async def release(self) -> None:
-        await self._pool.release(self._connection)
-
-    async def execute(self, stmt: str, params: t.Optional[t.Mapping] = None) -> t.Any:
-        assert self._connection is not None, "Connection is not acquired."
-        cursor = await self._connection.execute(stmt, params)
-        if cursor.lastrowid == 0:
-            return cursor.rowcount
-        return cursor.lastrowid
-
-    async def execute_all(
-        self,
-        stmt: str,
-        params: t.Optional[t.List[t.Mapping]] = None,
-    ) -> t.Any:
-        assert self._connection is not None, "Connection is not acquired."
-        async with self._connection.executemany(stmt, params) as cursor:
-            if cursor.lastrowid == 0:
-                return cursor.rowcount
-            return cursor.lastrowid
-
-    async def fetch_one(
-        self,
-        stmt: str,
-        params: t.Optional[t.Mapping] = None,
-    ) -> t.Optional[t.Mapping]:
-        assert self._connection is not None, "Connection is not acquired."
-        async with self._connection.execute(stmt, params) as cursor:
-            return await cursor.fetchone()
-
-    async def fetch_all(
-        self,
-        stmt: str,
-        params: t.Optional[t.Mapping] = None,
-    ) -> t.List[t.Mapping]:
-        assert self._connection is not None, "Connection is not acquired."
-        async with self._connection.execute(stmt, params) as cursor:
-            return await cursor.fetchall()
-
-    async def iterate(
-        self,
-        stmt: str,
-        params: t.Optional[t.Mapping] = None,
-    ) -> t.AsyncGenerator[t.Any, None]:
-        assert self._connection is not None, "Connection is not acquired."
-        async with self._connection.execute(stmt, params) as cursor:
-            async for row in cursor:
-                yield row
-
-    def transaction(self) -> _Transaction:
-        return _Transaction(self)
-
-    @property
-    def raw_connection(self) -> aiosqlite.Connection:
-        return self._connection
-
-    async def __aenter__(self) -> _Connection:
-        await self.acquire()
-        return self
-
-    async def __aexit__(self, *args) -> None:
-        await self.release()
 
 
 class _SavePoint(BaseSavePoint):
@@ -154,3 +68,94 @@ class _Transaction(BaseTransaction):
             await self.connection.execute("ROLLBACK")
         else:
             await self._savepoint.rollback()
+
+
+class _Connection(BaseConnection):
+    def __init__(self, pool: _Pool) -> None:
+        self._pool = pool
+        self._connection: t.Optional[aiosqlite.Connection] = None
+
+    async def acquire(self) -> None:
+        self._connection = await self._pool.acquire()
+
+    async def release(self) -> None:
+        await self._pool.release(self._connection)
+
+    async def execute(self, stmt: str,
+                      params: t.Optional[t.Mapping] = None) -> t.Any:
+        assert self._connection is not None, "Connection is not acquired."
+        cursor = await self._connection.execute(stmt, params)
+        if cursor.lastrowid == 0:
+            return cursor.rowcount
+        return cursor.lastrowid
+
+    async def execute_all(
+            self,
+            stmt: str,
+            params: t.Optional[t.List[t.Mapping]] = None,
+    ) -> t.Any:
+        assert self._connection is not None, "Connection is not acquired."
+        async with self._connection.executemany(stmt, params) as cursor:
+            if cursor.lastrowid == 0:
+                return cursor.rowcount
+            return cursor.lastrowid
+
+    async def fetch_one(
+            self,
+            stmt: str,
+            params: t.Optional[t.Mapping] = None,
+    ) -> t.Optional[t.Mapping]:
+        assert self._connection is not None, "Connection is not acquired."
+        async with self._connection.execute(stmt, params) as cursor:
+            return await cursor.fetchone()
+
+    async def fetch_all(
+            self,
+            stmt: str,
+            params: t.Optional[t.Mapping] = None,
+    ) -> t.List[t.Mapping]:
+        assert self._connection is not None, "Connection is not acquired."
+        async with self._connection.execute(stmt, params) as cursor:
+            return await cursor.fetchall()
+
+    async def iterate(
+            self,
+            stmt: str,
+            params: t.Optional[t.Mapping] = None,
+    ) -> t.AsyncGenerator[t.Any, None]:
+        assert self._connection is not None, "Connection is not acquired."
+        async with self._connection.execute(stmt, params) as cursor:
+            async for row in cursor:
+                yield row
+
+    def transaction(self) -> _Transaction:
+        return _Transaction(self)
+
+    @property
+    def raw_connection(self) -> aiosqlite.Connection:
+        return self._connection
+
+    async def __aenter__(self) -> _Connection:
+        await self.acquire()
+        return self
+
+    async def __aexit__(self, *args) -> None:
+        await self.release()
+
+
+class SQLiteDriver(BaseDriver):
+    dialect = "sqlite"
+    can_create_database = False
+
+    def __init__(self, url: URL) -> None:
+        self.url = url
+        self.pool = _Pool(url)
+
+    async def connect(self) -> None:
+        pass
+
+    async def disconnect(self) -> None:
+        pass
+
+    def connection(self) -> _Connection:
+        return _Connection(self.pool)

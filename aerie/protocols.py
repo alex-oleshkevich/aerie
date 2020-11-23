@@ -87,6 +87,20 @@ class Driver(t.Protocol):
         ...
 
 
+class BaseDriver:
+    dialect: str = "unknown"
+    can_create_database: bool = True
+
+    async def connect(self):
+        raise NotImplementedError()
+
+    async def disconnect(self):
+        raise NotImplementedError()
+
+    def connection(self) -> Connection:
+        raise NotImplementedError()
+
+
 class SavePoint(t.Protocol):
     async def begin(self) -> SavePoint:
         ...
