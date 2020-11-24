@@ -2,15 +2,39 @@ from __future__ import annotations
 
 import asyncio
 import contextvars
+import functools
 import typing as t
 from types import TracebackType
 
+from aerie.collections import Collection
 from aerie.exceptions import DriverNotRegistered
 from aerie.protocols import BaseDriver, Queryable
 from aerie.url import URL
 from aerie.utils import import_string
 
-E = t.TypeVar("E")
+E = t.TypeVar("E", bound=type)
+
+EntityFactoryType = t.Callable[[t.Mapping], t.Any]
+
+
+def _make_entity(
+    map_to: t.Type[E],
+    entity_factory: EntityFactoryType,
+    row: t.Mapping,
+) -> t.Union[t.Mapping, E, t.Any]:
+    assert not all(
+        [
+            map_to is not None,
+            entity_factory is not None,
+        ]
+    ), 'Either "entity_factory" or "map_to" could be passed at same time.'
+
+    if map_to:
+        return map_to(**row)
+
+    if entity_factory:
+        return entity_factory(row)
+    return row
 
 
 class Database:
@@ -39,7 +63,7 @@ class Database:
     async def execute_all(
         self,
         stmt: Queryable,
-        params: t.Optional[t.List[t.Mapping]] = None,
+        params: t.List[t.Mapping] = None,
     ) -> t.Any:
         async with self.connection() as connection:
             return await connection.execute_all(stmt, params)
@@ -47,21 +71,31 @@ class Database:
     async def fetch_one(
         self,
         stmt: Queryable,
-        params: t.Optional[t.Mapping] = None,
-    ) -> t.Any:
+        params: t.Mapping = None,
+        map_to: t.Type[E] = None,
+        entity_factory: EntityFactoryType = None,
+    ) -> t.Optional[t.Union[t.Mapping, E, t.Any]]:
+        factory = functools.partial(_make_entity, map_to, entity_factory)
         async with self.connection() as connection:
-            return await connection.fetch_one(str(stmt), params)
+            row = await connection.fetch_one(str(stmt), params)
+            if row:
+                return factory(row)
+            return None
 
     async def fetch_all(
         self,
         stmt: Queryable,
-        params: t.Optional[t.Mapping] = None,
-    ) -> t.Any:
+        params: t.Mapping = None,
+        map_to: t.Type[E] = None,
+        entity_factory: EntityFactoryType = None,
+    ) -> t.Union[Collection[t.Mapping], Collection[E], t.Any]:
+        factory = functools.partial(_make_entity, map_to, entity_factory)
         async with self.connection() as connection:
-            return await connection.fetch_all(str(stmt), params)
+            rows = await connection.fetch_all(str(stmt), params)
+            return Collection(list(map(factory, rows)))
 
     async def fetch_val(
-        self, stmt: Queryable, params: t.Optional[t.Mapping] = None, column: t.Any = 0
+        self, stmt: Queryable, params: t.Mapping = None, column: t.Any = 0
     ) -> t.Any:
         async with self.connection() as connection:
             row = await connection.fetch_one(str(stmt), params)
@@ -73,10 +107,13 @@ class Database:
         self,
         stmt: Queryable,
         params: t.Optional[t.Mapping] = None,
-    ) -> t.AsyncGenerator[t.Any, None]:
+        map_to: t.Type[E] = None,
+        entity_factory: EntityFactoryType = None,
+    ) -> t.AsyncGenerator[t.Union[t.Mapping, E, t.Any], None]:
+        factory = functools.partial(_make_entity, map_to, entity_factory)
         async with self.connection() as connection:
             async for row in connection.iterate(str(stmt), params):
-                yield row
+                yield factory(row)
 
     def transaction(self, force_rollback: bool = False) -> _Transaction:
         """Manages database transactions (if supported by the used driver).
@@ -164,7 +201,7 @@ class _Connection:
     async def execute_all(
         self,
         stmt: Queryable,
-        params: t.Optional[t.List[t.Mapping]] = None,
+        params: t.List[t.Mapping] = None,
     ) -> t.Any:
         async with self._query_lock:
             return await self._connection.execute_all(str(stmt), params)
@@ -172,7 +209,7 @@ class _Connection:
     async def fetch_one(
         self,
         stmt: str,
-        params: t.Optional[t.Mapping] = None,
+        params: t.Mapping = None,
     ) -> t.Optional[t.Mapping]:
         async with self._query_lock:
             return await self._connection.fetch_one(str(stmt), params)
@@ -180,13 +217,13 @@ class _Connection:
     async def fetch_all(
         self,
         stmt: str,
-        params: t.Optional[t.Mapping] = None,
+        params: t.Mapping = None,
     ) -> t.List[t.Mapping]:
         async with self._query_lock:
             return await self._connection.fetch_all(stmt, params)
 
     async def fetch_val(
-        self, stmt: str, params: t.Optional[t.Mapping] = None, column: t.Any = 0
+        self, stmt: str, params: t.Mapping = None, column: t.Any = 0
     ) -> t.Any:
         async with self._query_lock:
             return await self._connection.fetch_val(stmt, params, column)
@@ -194,7 +231,7 @@ class _Connection:
     async def iterate(
         self,
         stmt: str,
-        params: t.Optional[t.Mapping] = None,
+        params: t.Mapping = None,
     ) -> t.AsyncGenerator[t.Any, None]:
         async with self._query_lock:
             async for row in self._connection.iterate(stmt, params):

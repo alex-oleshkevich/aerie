@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import dataclass
 
 import pytest
 
@@ -120,12 +121,12 @@ async def test_transaction_commit(database_url):
     And total count of rows must be equal to 1.
     """
     async with Database(database_url) as db:
-        async with db.transaction():
-            await db.execute(
-                'insert into users (name) values (:name)', {'name': 'root'}
-            )
-        assert await db.fetch_val('select count(*) from users') == 1
-        await db.execute('delete from users')
+        async with db.transaction(force_rollback=True):
+            async with db.transaction():
+                await db.execute(
+                    'insert into users (name) values (:name)', {'name': 'root'}
+                )
+            assert await db.fetch_val('select count(*) from users') == 1
 
 
 @pytest.mark.parametrize("database_url", DATABASES)
@@ -163,19 +164,20 @@ async def test_nested_transactions(database_url):
     """
 
     async with Database(database_url) as db:
-        async with db.transaction():
-            await db.execute(
-                'insert into users (name) values (:name)', {'name': 'root'}
-            )
+        async with db.transaction(force_rollback=True):
+            async with db.transaction():
+                await db.execute(
+                    'insert into users (name) values (:name)', {'name': 'root'}
+                )
 
-            with pytest.raises(Exception):
-                async with db.transaction():
-                    await db.execute(
-                        'insert into users (name) values (:name)',
-                        {'name': 'root'}
-                    )
-                    raise Exception()
-        assert await db.fetch_val('select count(*) from users') == 1
+                with pytest.raises(Exception):
+                    async with db.transaction():
+                        await db.execute(
+                            'insert into users (name) values (:name)',
+                            {'name': 'root'}
+                        )
+                        raise Exception()
+            assert await db.fetch_val('select count(*) from users') == 1
 
 
 @pytest.mark.parametrize("database_url", DATABASES)
@@ -278,3 +280,111 @@ def test_create_driver():
     db = Database('dummy://')
     driver = db.create_driver()
     assert isinstance(driver, _SampleDriver)
+
+
+@dataclass
+class User:
+    id: int
+    name: str
+    data: str
+
+
+@pytest.mark.parametrize("database_url", DATABASES)
+@pytest.mark.asyncio
+async def test_iterate_maps_to_callable(database_url):
+    async with Database(database_url) as db:
+        async with db.transaction(force_rollback=True):
+            await db.execute_all(
+                'insert into users (name) values (:name)',
+                [
+                    {'name': 'map1'},
+                    {'name': 'map2'}
+                ]
+            )
+
+            row = await db.fetch_one(
+                'select * from users where name = :name', {'name': 'map1'},
+                entity_factory=lambda row: User(**row),
+            )
+            assert isinstance(row, User)
+            assert row.name == 'map1'
+
+            rows = await db.fetch_all(
+                'select * from users',
+                entity_factory=lambda row: User(**row),
+            )
+            assert all([isinstance(row, User) for row in rows])
+
+            rows = []
+            async for row in db.iterate(
+                    'select * from users',
+                    entity_factory=lambda row: User(**row),
+            ):
+                rows.append(row)
+            assert all([isinstance(row, User) for row in rows])
+
+
+@pytest.mark.parametrize("database_url", DATABASES)
+@pytest.mark.asyncio
+async def test_iterate_maps_to_class(database_url):
+    async with Database(database_url) as db:
+        async with db.transaction(force_rollback=True):
+            await db.execute_all(
+                'insert into users (name) values (:name)',
+                [
+                    {'name': 'map1'},
+                    {'name': 'map2'}
+                ]
+            )
+
+            row = await db.fetch_one(
+                'select * from users where name = :name', {'name': 'map1'},
+                map_to=User,
+            )
+            assert isinstance(row, User)
+            assert row.name == 'map1'
+
+            rows = await db.fetch_all('select * from users', map_to=User)
+            assert all([isinstance(row, User) for row in rows])
+
+            rows = []
+            async for row in db.iterate('select * from users',
+                                        map_to=User):
+                rows.append(row)
+            assert all([isinstance(row, User) for row in rows])
+
+
+@pytest.mark.parametrize("database_url", DATABASES)
+@pytest.mark.asyncio
+async def test_iterate_cant_map_with_factory_and_class(database_url):
+    async with Database(database_url) as db:
+        async with db.transaction(force_rollback=True):
+            await db.execute_all(
+                'insert into users (name) values (:name)',
+                [
+                    {'name': 'map1'},
+                    {'name': 'map2'}
+                ]
+            )
+
+            with pytest.raises(AssertionError):
+                await db.fetch_one(
+                    'select * from users',
+                    map_to=User,
+                    entity_factory=lambda row: row,
+                )
+
+            with pytest.raises(AssertionError):
+                await db.fetch_all(
+                    'select * from users',
+                    map_to=User,
+                    entity_factory=lambda row: row,
+                )
+
+            with pytest.raises(AssertionError):
+                async for row in db.iterate(
+                        'select * from users',
+                        map_to=User,
+                        entity_factory=lambda row: row
+                ):
+                    pass

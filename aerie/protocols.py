@@ -3,12 +3,12 @@ from __future__ import annotations
 import typing as t
 
 
-class Stringable(t.Protocol):
+class StrLike(t.Protocol):
     def __str__(self) -> str:
         ...
 
 
-Queryable = t.Union[str, Stringable]
+Queryable = t.Union[str, StrLike]
 
 
 class Row(t.Mapping):
@@ -22,40 +22,40 @@ class BaseConnection:
     async def release(self) -> None:
         raise NotImplementedError()
 
-    async def execute(self, stmt: str, params: t.Optional[t.Mapping] = None) -> t.Any:
+    async def execute(self, stmt: str, params: t.Mapping = None) -> t.Any:
         raise NotImplementedError()
 
     async def execute_all(
         self,
         stmt: str,
-        params: t.Optional[t.List[t.Mapping]] = None,
+        params: t.List[t.Mapping] = None,
     ) -> t.Any:
         raise NotImplementedError()
 
     async def fetch_one(
         self,
         stmt: str,
-        params: t.Optional[t.Mapping] = None,
+        params: t.Mapping = None,
     ) -> t.Optional[t.Mapping]:
         raise NotImplementedError()
 
     async def fetch_val(
-        self, stmt: str, params: t.Optional[t.Mapping] = None, column: t.Any = 0
-    ) -> t.Optional[t.Mapping]:
+        self, stmt: str, params: t.Mapping = None, column: t.Any = 0
+    ) -> t.Optional[t.Any]:
         row = await self.fetch_one(stmt, params)
         return None if row is None else row[column]
 
     async def fetch_all(
         self,
         stmt: str,
-        params: t.Optional[t.Mapping] = None,
+        params: t.Mapping = None,
     ) -> t.List[t.Mapping]:
         raise NotImplementedError()
 
     async def iterate(
         self,
         stmt: str,
-        params: t.Optional[t.Mapping] = None,
+        params: t.Mapping = None,
     ) -> t.AsyncGenerator[t.Mapping, None]:
         raise NotImplementedError()
         # noinspection PyUnreachableCode
