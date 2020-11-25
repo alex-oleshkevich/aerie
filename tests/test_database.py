@@ -453,6 +453,22 @@ async def test_upsert(database_url):
                 'users', where='name = :name', where_params={'name': 'user2'}
             ) == 1
 
+            # unique violation by ID field
+            # we exclude name from being replaced
+            await db.insert(
+                'users', {'name': 'user3', 'id': 1},
+                on_conflict=OnConflict.REPLACE,
+                conflict_target=['id'],
+                replace_except=['name'],
+            )
+            # update did not happen
+            assert await db.count(
+                'users', where='name = :name', where_params={'name': 'user2'}
+            ) == 1
+            assert await db.count(
+                'users', where='name = :name', where_params={'name': 'user3'}
+            ) == 0
+
 
 @pytest.mark.parametrize("database_url", DATABASES)
 @pytest.mark.asyncio

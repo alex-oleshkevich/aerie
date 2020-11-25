@@ -134,7 +134,6 @@ class Database:
             conflict_target,
             replace_except,
         )
-        print(qb)
         return await self.execute(qb, values)
 
     async def insert_all(
