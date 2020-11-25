@@ -4,6 +4,7 @@ import typing as t
 import uuid
 
 import aiosqlite
+import pypika as pk
 
 from aerie.protocols import BaseConnection, BaseDriver, BaseSavePoint, BaseTransaction
 from aerie.url import URL
@@ -144,6 +145,7 @@ class _Connection(BaseConnection):
 class SQLiteDriver(BaseDriver):
     dialect = "sqlite"
     can_create_database = False
+    query_class = pk.queries.Query
 
     def __init__(self, url: URL) -> None:
         self.url = url

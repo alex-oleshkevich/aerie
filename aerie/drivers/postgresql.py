@@ -6,6 +6,7 @@ from types import TracebackType
 
 import asyncpg
 import asyncpg.pool
+import pypika as pk
 
 from aerie.protocols import BaseConnection, BaseDriver, BaseTransaction
 from aerie.url import URL
@@ -133,8 +134,11 @@ class _Connection(BaseConnection):
         return stmt, args
 
 
-class PostgresDriver(BaseDriver):
+class PostgresDriver(
+    BaseDriver[pk.dialects.PostgreSQLQuery, pk.dialects.PostgreQueryBuilder]
+):
     dialect = "postgresql"
+    query_class = pk.dialects.PostgreSQLQuery
 
     def __init__(self, url: URL) -> None:
         self.url = url

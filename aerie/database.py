@@ -6,9 +6,11 @@ import functools
 import typing as t
 from types import TracebackType
 
+import pypika as pk
+
 from aerie.collections import Collection
 from aerie.exceptions import DriverNotRegistered
-from aerie.protocols import BaseDriver, Queryable
+from aerie.protocols import BaseDriver, IterableValues, Queryable
 from aerie.url import URL
 from aerie.utils import import_string
 
@@ -54,7 +56,7 @@ class Database:
     async def execute(
         self,
         stmt: Queryable,
-        params: dict = None,
+        params: t.Mapping = None,
     ) -> t.Any:
         """Execute query with given params."""
         async with self.connection() as connection:
@@ -114,6 +116,64 @@ class Database:
         async with self.connection() as connection:
             async for row in connection.iterate(str(stmt), params):
                 yield factory(row)
+
+    async def insert(
+        self,
+        table_name: str,
+        values: t.Mapping,
+    ) -> int:
+        qb = self.driver.insert_query(table_name, values)
+        return await self.execute(qb, values)
+
+    async def insert_all(
+        self,
+        table_name: str,
+        values: IterableValues,
+    ) -> None:
+        qb = self.driver.insert_all_query(table_name, values)
+        return await self.execute_all(qb, list(values))
+
+    async def update(
+        self,
+        table_name: str,
+        values: t.List[t.Mapping],
+        where: t.Mapping = None,
+    ) -> None:
+        ...
+
+    async def update_by(
+        self,
+        table_name: str,
+        column: str,
+        value: t.Any,
+    ) -> None:
+        ...
+
+    async def delete(
+        self,
+        table_name: str,
+        where: t.Mapping = None,
+    ) -> None:
+        ...
+
+    async def delete_by(
+        self,
+        table_name: str,
+        column: str,
+        value: t.Any,
+    ) -> None:
+        ...
+
+    async def upsert(
+        self,
+        table_name: str,
+        values: t.Mapping,
+        where: t.Mapping,
+    ) -> None:
+        ...
+
+    def query_builder(self) -> pk.queries.Query:
+        return self.driver.get_query_builder()
 
     def transaction(self, force_rollback: bool = False) -> _Transaction:
         """Manages database transactions (if supported by the used driver).

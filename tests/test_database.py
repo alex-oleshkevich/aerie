@@ -348,8 +348,9 @@ async def test_iterate_maps_to_class(database_url):
             assert all([isinstance(row, User) for row in rows])
 
             rows = []
-            async for row in db.iterate('select * from users',
-                                        map_to=User):
+            async for row in db.iterate(
+                    'select * from users', map_to=User
+            ):
                 rows.append(row)
             assert all([isinstance(row, User) for row in rows])
 
@@ -388,3 +389,29 @@ async def test_iterate_cant_map_with_factory_and_class(database_url):
                         entity_factory=lambda row: row
                 ):
                     pass
+
+
+@pytest.mark.parametrize("database_url", DATABASES)
+@pytest.mark.asyncio
+async def test_insert(database_url):
+    async with Database(database_url) as db:
+        async with db.transaction(force_rollback=True):
+            await db.insert('users', {'name': 'user1'})
+            await db.insert('users', {'name': 'user2'})
+
+            rows = await db.fetch_all('select name from users')
+            assert rows.pluck('name') == ['user1', 'user2']
+
+
+@pytest.mark.parametrize("database_url", DATABASES)
+@pytest.mark.asyncio
+async def test_insert_all(database_url):
+    async with Database(database_url) as db:
+        async with db.transaction(force_rollback=True):
+            await db.insert_all('users', [
+                {'name': 'user1'},
+                {'name': 'user2'},
+            ])
+
+            rows = await db.fetch_all('select name from users')
+            assert rows.pluck('name') == ['user1', 'user2']

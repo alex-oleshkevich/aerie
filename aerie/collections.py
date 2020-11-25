@@ -24,7 +24,7 @@ def chunked(items: t.Iterator, size: int):
 
 def attribute_reader(obj, attr, default=None) -> t.Any:
     if hasattr(obj, "__getitem__"):
-        return obj.get(attr, default)
+        return obj[attr]
     return getattr(obj, attr, default)
 
 
@@ -221,7 +221,9 @@ class Collection(t.Generic[E]):
 
     def __eq__(self, other: t.Union[Collection[E], object]) -> bool:
         if not isinstance(other, Collection):
-            raise ValueError("Can compare only collections.")
+            if not isinstance(other, (set, list, tuple)):
+                raise ValueError("Right argument of == operator is not an iterator.")
+            other = Collection(list(other))
         return self.items == other.items
 
     def __str__(self) -> str:

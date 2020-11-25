@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import typing as t
 
+import pypika as pk
+
 
 class StrLike(t.Protocol):
     def __str__(self) -> str:
@@ -91,9 +93,19 @@ class BaseTransaction:
         raise NotImplementedError()
 
 
-class BaseDriver:
+Q = t.TypeVar("Q", bound=pk.queries.Query)
+QB = t.TypeVar("QB", bound=pk.queries.QueryBuilder)
+
+IterableValues = t.Union[
+    t.List[t.Mapping],
+    t.Tuple[t.Mapping],
+]
+
+
+class BaseDriver(t.Generic[Q, QB]):
     dialect: str = "unknown"
     can_create_database: bool = True
+    query_class: t.Type[QB] = pk.queries.Query
 
     async def connect(self):
         raise NotImplementedError()
@@ -103,3 +115,24 @@ class BaseDriver:
 
     def connection(self) -> BaseConnection:
         raise NotImplementedError()
+
+    def get_query_builder(self) -> Q:
+        return self.query_class()
+
+    def insert_query(
+        self,
+        table_name: str,
+        values: t.Mapping,
+    ) -> QB:
+        qb = self.get_query_builder()
+        columns = values.keys()
+        _values = [pk.Parameter(f":{column}") for column in columns]
+        return qb.into(table_name).columns(*columns).insert(*_values)
+
+    def insert_all_query(
+        self,
+        table_name: str,
+        values: IterableValues,
+    ) -> QB:
+        values_0 = values[0]
+        return self.insert_query(table_name, values_0)
