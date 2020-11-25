@@ -8,7 +8,9 @@ import asyncpg
 import asyncpg.pool
 import pypika as pk
 
+from aerie.exceptions import UniqueViolationError
 from aerie.protocols import BaseConnection, BaseDriver, BaseTransaction
+from aerie.terms import OnConflict
 from aerie.url import URL
 
 
@@ -57,7 +59,10 @@ class _Connection(BaseConnection):
     async def execute(self, stmt: str, params: t.Mapping = None) -> t.Any:
         assert self._connection is not None, "Connection is not acquired."
         stmt, args = self._replace_placeholders(stmt, params)
-        return await self._connection.fetchval(stmt, *args)
+        try:
+            return await self._connection.fetchval(stmt, *args)
+        except asyncpg.UniqueViolationError as ex:
+            raise UniqueViolationError(str(ex)) from None
 
     async def execute_all(
         self,
@@ -74,7 +79,10 @@ class _Connection(BaseConnection):
                 else:
                     _args.append(list(data.values()))
 
-        return await self._connection.executemany(stmt, _args)
+        try:
+            return await self._connection.executemany(stmt, _args)
+        except asyncpg.UniqueViolationError as ex:
+            raise UniqueViolationError(str(ex)) from None
 
     async def fetch_one(
         self,
@@ -157,3 +165,28 @@ class PostgresDriver(
 
     def connection(self) -> _Connection:
         return _Connection(self.pool)
+
+    def insert_query(
+        self,
+        table_name: str,
+        values: t.Mapping,
+        on_conflict: t.Union[str, t.List[str]] = OnConflict.RAISE,
+        conflict_target: t.Union[str, t.List[str]] = None,
+        replace_except: t.List[str] = None,
+    ) -> pk.dialects.PostgreQueryBuilder:
+        qb = super().insert_query(table_name, values)
+        conflict_target = conflict_target or []
+        replace_except = replace_except or []
+
+        if on_conflict != OnConflict.RAISE:
+            qb = qb.on_conflict(*conflict_target)
+
+        if on_conflict == OnConflict.NOTHING:
+            qb = qb.do_nothing()
+
+        if on_conflict == OnConflict.REPLACE:
+            for column, value in values.items():
+                if column in replace_except:
+                    continue
+                qb = qb.do_update(column, value)
+        return qb

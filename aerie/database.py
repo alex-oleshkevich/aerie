@@ -11,6 +11,7 @@ import pypika as pk
 from aerie.collections import Collection
 from aerie.exceptions import DriverNotRegistered
 from aerie.protocols import BaseDriver, IterableValues, Queryable
+from aerie.terms import OnConflict
 from aerie.url import URL
 from aerie.utils import import_string
 
@@ -76,13 +77,14 @@ class Database:
         params: t.Mapping = None,
         map_to: t.Type[E] = None,
         entity_factory: EntityFactoryType = None,
+        default: t.Union[t.Mapping, E, t.Any] = None,
     ) -> t.Optional[t.Union[t.Mapping, E, t.Any]]:
         factory = functools.partial(_make_entity, map_to, entity_factory)
         async with self.connection() as connection:
             row = await connection.fetch_one(str(stmt), params)
             if row:
                 return factory(row)
-            return None
+            return default
 
     async def fetch_all(
         self,
@@ -121,8 +123,18 @@ class Database:
         self,
         table_name: str,
         values: t.Mapping,
+        on_conflict: str = OnConflict.RAISE,
+        conflict_target: t.Union[str, t.List[str]] = None,
+        replace_except: t.List[str] = None,
     ) -> int:
-        qb = self.driver.insert_query(table_name, values)
+        qb = self.driver.insert_query(
+            table_name,
+            values,
+            on_conflict,
+            conflict_target,
+            replace_except,
+        )
+        print(qb)
         return await self.execute(qb, values)
 
     async def insert_all(
@@ -136,33 +148,22 @@ class Database:
     async def update(
         self,
         table_name: str,
-        values: t.List[t.Mapping],
-        where: t.Mapping = None,
+        set: t.Mapping,
+        where: t.Union[str, pk.terms.Term] = None,
+        where_params: t.Mapping = None,
     ) -> None:
-        ...
-
-    async def update_by(
-        self,
-        table_name: str,
-        column: str,
-        value: t.Any,
-    ) -> None:
-        ...
+        qb = self.driver.update_query(table_name, set, where)
+        where_params = where_params or {}
+        await self.execute(qb, {**set, **where_params})
 
     async def delete(
         self,
         table_name: str,
-        where: t.Mapping = None,
+        where: t.Union[str, pk.terms.Term] = None,
+        where_params: t.Mapping = None,
     ) -> None:
-        ...
-
-    async def delete_by(
-        self,
-        table_name: str,
-        column: str,
-        value: t.Any,
-    ) -> None:
-        ...
+        qb = self.driver.delete_query(table_name, where)
+        await self.execute(qb, where_params)
 
     async def upsert(
         self,
@@ -171,6 +172,16 @@ class Database:
         where: t.Mapping,
     ) -> None:
         ...
+
+    async def count(
+        self,
+        table_name: str,
+        column: str = "*",
+        where: t.Union[str, pk.terms.Term] = None,
+        where_params: t.Mapping = None,
+    ) -> int:
+        qb = self.driver.count_query(table_name, column, where)
+        return await self.fetch_val(qb, where_params)
 
     def query_builder(self) -> pk.queries.Query:
         return self.driver.get_query_builder()

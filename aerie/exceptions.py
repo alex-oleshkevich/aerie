@@ -4,3 +4,11 @@ class AerieException(Exception):
 
 class DriverNotRegistered(AerieException):
     pass
+
+
+class IntegrityError(AerieException):
+    pass
+
+
+class UniqueViolationError(IntegrityError):
+    pass

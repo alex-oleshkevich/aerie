@@ -4,6 +4,8 @@ from dataclasses import dataclass
 import pytest
 
 from aerie import Database
+from aerie.exceptions import UniqueViolationError
+from aerie.terms import OnConflict
 from aerie.url import URL
 
 DATABASES = [
@@ -25,19 +27,22 @@ async def create_database(database_url: URL):
         connection = await aiosqlite.connect(database_url.db_name)
         sql = (
             "create table if not exists users "
-            "(id integer primary key, name varchar(256), "
-            "data jsonb default '{}')"
+            "(id integer primary key, name varchar(256))"
         )
         await connection.execute(sql)
+        await connection.execute(
+            'create unique index name_uniq on users (name)')
         await connection.close()
     elif database_url.driver == 'postgresql':
         import asyncpg
         connection = await asyncpg.connect(database_url.url)
         sql = (
             "create table if not exists public.users "
-            "(id serial primary key, name varchar(256), data json default '{}')"
+            "(id serial primary key, name varchar(256))"
         )
         await connection.execute(sql)
+        await connection.execute(
+            'create unique index name_uniq on users (name)')
         await connection.close()
 
 
@@ -107,6 +112,16 @@ async def test_queries(database_url):
             assert iterate_result[0]['name'] == 'root'
             assert iterate_result[1]['name'] == 'user1'
             assert iterate_result[2]['name'] == 'user2'
+
+
+@pytest.mark.parametrize("database_url", DATABASES)
+@pytest.mark.asyncio
+async def test_fetch_one_with_default(database_url):
+    async with Database(database_url) as db:
+        async with db.transaction(force_rollback=True):
+            assert await db.fetch_one(
+                "select * from users", default='fallback'
+            ) == 'fallback'
 
 
 @pytest.mark.parametrize("database_url", DATABASES)
@@ -286,7 +301,6 @@ def test_create_driver():
 class User:
     id: int
     name: str
-    data: str
 
 
 @pytest.mark.parametrize("database_url", DATABASES)
@@ -415,3 +429,120 @@ async def test_insert_all(database_url):
 
             rows = await db.fetch_all('select name from users')
             assert rows.pluck('name') == ['user1', 'user2']
+
+
+@pytest.mark.parametrize("database_url", DATABASES)
+@pytest.mark.asyncio
+async def test_upsert(database_url):
+    async with Database(database_url) as db:
+        async with db.transaction(force_rollback=True):
+            await db.insert('users', {'name': 'user1'})
+            await db.insert(
+                'users', {'name': 'user1'},
+                on_conflict=OnConflict.NOTHING,
+            )
+
+            # unique violation by ID field
+            # we replace name
+            await db.insert(
+                'users', {'name': 'user2', 'id': 1},
+                on_conflict=OnConflict.REPLACE,
+                conflict_target=['id'],
+            )
+            assert await db.count(
+                'users', where='name = :name', where_params={'name': 'user2'}
+            ) == 1
+
+
+@pytest.mark.parametrize("database_url", DATABASES)
+@pytest.mark.asyncio
+async def test_unique_error_to_aerie_error(database_url):
+    async with Database(database_url) as db:
+        async with db.transaction(force_rollback=True):
+            await db.insert('users', {'name': 'user1'})
+            with pytest.raises(UniqueViolationError):
+                await db.insert('users', {'name': 'user1'})
+
+
+@pytest.mark.parametrize("database_url", DATABASES)
+@pytest.mark.asyncio
+async def test_count(database_url):
+    async with Database(database_url) as db:
+        async with db.transaction(force_rollback=True):
+            await db.insert('users', {'name': 'user1'})
+
+            assert await db.count('users') == 1
+            assert await db.count('users', column='name') == 1
+            assert await db.count('users', where='name = :name', where_params={
+                'name': 'user1',
+            }) == 1
+            assert await db.count('users', where='name = :name', where_params={
+                'name': 'user2',
+            }) == 0
+            users = db.query_builder().Table('users')
+            assert await db.count('users', where=users.name == 'user1') == 1
+
+
+@pytest.mark.parametrize("database_url", DATABASES)
+@pytest.mark.asyncio
+async def test_update(database_url):
+    async with Database(database_url) as db:
+        async with db.transaction(force_rollback=True):
+            await db.insert('users', {'name': 'user1'})
+
+            # no where
+            await db.update('users', {'id': 10, 'name': 'newname'})
+            assert await db.count(
+                'users', where='name = :name', where_params={'name': 'newname'}
+            ) == 1
+
+            # where as string
+            await db.update(
+                'users',
+                set={'name': 'name2'},
+                where='name = :wh_name',
+                where_params={'wh_name': 'newname'},
+            )
+            assert await db.count(
+                'users', where='name = :name', where_params={'name': 'name2'}
+            ) == 1
+
+            # where as pika term
+            users = db.query_builder().Table('users')
+            await db.update(
+                'users',
+                set={'name': 'name3'},
+                where=users.name == 'name2',
+            )
+            assert await db.count(
+                'users', where='name = :name', where_params={'name': 'name3'}
+            ) == 1
+
+
+@pytest.mark.parametrize("database_url", DATABASES)
+@pytest.mark.asyncio
+async def test_delete(database_url):
+    async with Database(database_url) as db:
+        async with db.transaction(force_rollback=True):
+            await db.insert_all('users', [
+                {'name': 'user1'},
+                {'name': 'user2'},
+                {'name': 'user3'},
+            ])
+
+            # where as string
+            await db.delete(
+                'users',
+                where='name = :name',
+                where_params={'name': 'user1'},
+            )
+            assert await db.count('users') == 2
+
+            # where as pika term
+            users = db.query_builder().Table('users')
+            await db.delete('users', where=users.name == 'user2')
+            assert await db.count('users') == 1
+
+            # no where
+            await db.delete('users')
+            assert await db.count('users') == 0
