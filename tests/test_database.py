@@ -1,4 +1,5 @@
 import asyncio
+import os
 from dataclasses import dataclass
 
 import pytest
@@ -9,8 +10,15 @@ from aerie.terms import OnConflict
 from aerie.url import URL
 
 DATABASES = [
-    URL('sqlite:///tmp/aerie.test.db'),
-    URL('postgresql://postgres:postgres@localhost:5432/aerie_test'),
+    URL(
+        os.environ.get('SQLITE_URL', 'sqlite:///tmp/aerie.test.db')
+    ),
+    URL(
+        os.environ.get(
+            'POSTGRES_URL',
+            'postgresql://postgres:postgres@localhost:5432/aerie_test'
+        )
+    ),
 ]
 
 
