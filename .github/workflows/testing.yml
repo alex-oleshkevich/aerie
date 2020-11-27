@@ -18,6 +18,8 @@ jobs:
                 env:
                     POSTGRES_PASSWORD: postgres
                     POSTGRES_DB: postgres
+                ports:
+                    - 5432:5432
                 options: >-
                     --health-cmd pg_isready
                     --health-interval 10s
@@ -39,6 +41,6 @@ jobs:
                     poetry install
             -   name: Test with pytest
                 env:
-                    key: POSTGRES_URL=postgresql://postgres:postgres@postgres:5432/postgres
+                    key: POSTGRES_URL=postgresql://postgres:postgres@localhost:5432/postgres
                 run: |
                     poetry run pytest
