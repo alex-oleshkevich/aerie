@@ -42,7 +42,7 @@ jobs:
             -   name: Install dependencies
                 run: |
                     python -m pip install poetry
-                    poetry install --dev
+                    poetry install
             -   name: Test with pytest
                 env:
                     key: POSTGRES_URL=postgresql://postgres:postgres@postgres:5432/aerie_test
