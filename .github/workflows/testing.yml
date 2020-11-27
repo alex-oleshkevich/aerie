@@ -41,4 +41,4 @@ jobs:
                 env:
                     key: POSTGRES_URL=postgresql://postgres:postgres@postgres:5432/postgres
                 run: |
-                    pytest
+                    poetry run pytest
