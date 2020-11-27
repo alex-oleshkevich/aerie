@@ -16,6 +16,8 @@ pytest-sugar = "^0.9.4"
 pytest-asyncio = "^0.14.0"
 pytest-coverage = "^0.0"
 pre-commit = "^2.9.0"
+aiosqlite = "^0.16.0"
+asyncpg = "^0.21.0"
 
 [tool.poetry.extras]
 pgsql = ["asyncpg"]
