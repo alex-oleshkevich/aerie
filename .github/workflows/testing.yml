@@ -41,6 +41,6 @@ jobs:
                     poetry install
             -   name: Test with pytest
                 env:
-                    key: POSTGRES_URL=postgresql://postgres:postgres@localhost:5432/postgres
+                    POSTGRES_URL: postgresql://postgres:postgres@localhost:5432/postgres
                 run: |
                     poetry run pytest
