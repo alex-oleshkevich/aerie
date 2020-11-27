@@ -19,7 +19,7 @@ jobs:
                 image: postgres
                 env:
                     POSTGRES_PASSWORD: postgres
-                    POSTGRES_DB: aerie_test
+                    POSTGRES_DB: postgres
                 options: >-
                     --health-cmd pg_isready
                     --health-interval 10s
@@ -27,7 +27,7 @@ jobs:
                     --health-retries 5
         strategy:
             matrix:
-                python-version: ['3.8', '3.9']
+                python-version: ['3.8']
 
         steps:
             -   uses: actions/checkout@v2
@@ -45,6 +45,6 @@ jobs:
                     poetry install
             -   name: Test with pytest
                 env:
-                    key: POSTGRES_URL=postgresql://postgres:postgres@postgres:5432/aerie_test
+                    key: POSTGRES_URL=postgresql://postgres:postgres@postgres:5432/postgres
                 run: |
                     pytest
