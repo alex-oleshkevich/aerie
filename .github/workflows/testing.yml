@@ -12,8 +12,6 @@ on:
 jobs:
     test:
         runs-on: ubuntu-latest
-        container:
-            image: ubuntu:20.04
         services:
             postgres:
                 image: postgres
