@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import asyncio
 import contextvars
 import functools
 import typing as t
-from types import TracebackType
 
 import pypika as pk
 
 from aerie.collections import Collection
+from aerie.connection import Connection, Transaction
 from aerie.exceptions import DriverNotRegistered
 from aerie.protocols import BaseDriver, IterableValues, Queryable
 from aerie.terms import OnConflict
@@ -185,7 +184,7 @@ class Database:
     def query_builder(self) -> pk.queries.Query:
         return self.driver.get_query_builder()
 
-    def transaction(self, force_rollback: bool = False) -> _Transaction:
+    def transaction(self, force_rollback: bool = False) -> Transaction:
         """Manages database transactions (if supported by the used driver).
         It provides context manager interface and
         therefore may be used with `async with` keywords.
@@ -208,7 +207,7 @@ class Database:
         >>> # do stuff
         >>> await tx.commit()
         """
-        return _Transaction(self.connection, force_rollback)
+        return Transaction(self.connection, force_rollback)
 
     async def connect(self) -> Database:
         await self.driver.connect()
@@ -234,11 +233,11 @@ class Database:
     def register_driver(cls, scheme: str, driver: str) -> None:
         cls.drivers[scheme] = driver
 
-    def connection(self) -> _Connection:
+    def connection(self) -> Connection:
         try:
             return self._connection_context.get()
         except LookupError:
-            connection = _Connection(self.driver)
+            connection = Connection(self.driver)
             self._connection_context.set(connection)
             return connection
 
@@ -250,141 +249,3 @@ class Database:
 
     def __repr__(self) -> str:
         return f"<Database: {self.url}>"
-
-
-class _Connection:
-    def __init__(self, driver: BaseDriver) -> None:
-        self._driver = driver
-        self._connection = driver.connection()
-        self._query_lock = asyncio.Lock()
-        self._connection_lock = asyncio.Lock()
-        self._connection_counter = 0
-
-        self.transaction_lock = asyncio.Lock()
-        self.transaction_counter = 0
-        self.transactions: t.List[_Transaction] = []
-
-    async def execute(self, stmt: Queryable, params: t.Mapping = None) -> t.Any:
-        async with self._query_lock:
-            return await self._connection.execute(str(stmt), params)
-
-    async def execute_all(
-        self,
-        stmt: Queryable,
-        params: t.List[t.Mapping] = None,
-    ) -> t.Any:
-        async with self._query_lock:
-            return await self._connection.execute_all(str(stmt), params)
-
-    async def fetch_one(
-        self,
-        stmt: str,
-        params: t.Mapping = None,
-    ) -> t.Optional[t.Mapping]:
-        async with self._query_lock:
-            return await self._connection.fetch_one(str(stmt), params)
-
-    async def fetch_all(
-        self,
-        stmt: str,
-        params: t.Mapping = None,
-    ) -> t.List[t.Mapping]:
-        async with self._query_lock:
-            return await self._connection.fetch_all(stmt, params)
-
-    async def fetch_val(
-        self, stmt: str, params: t.Mapping = None, column: t.Any = 0
-    ) -> t.Any:
-        async with self._query_lock:
-            return await self._connection.fetch_val(stmt, params, column)
-
-    async def iterate(
-        self,
-        stmt: str,
-        params: t.Mapping = None,
-    ) -> t.AsyncGenerator[t.Any, None]:
-        async with self._query_lock:
-            async for row in self._connection.iterate(stmt, params):
-                yield row
-
-    def transaction(self) -> _Transaction:
-        return _Transaction(lambda: self)
-
-    async def __aenter__(self) -> _Connection:
-        async with self._connection_lock:
-            self._connection_counter += 1
-            if self._connection_counter == 1:
-                await self._connection.acquire()
-        return self
-
-    async def __aexit__(self, *args) -> None:
-        async with self._connection_lock:
-            assert self._connection is not None
-            self._connection_counter -= 1
-            if self._connection_counter == 0:
-                await self._connection.release()
-
-
-class _Transaction:
-    def __init__(
-        self,
-        connection_factory: t.Callable[[], _Connection],
-        force_rollback: bool = False,
-    ) -> None:
-        self._connection = connection_factory()
-        self._transaction = self._connection._connection.transaction()
-        self._force_rollback = force_rollback
-
-    @property
-    def _is_root(self) -> bool:
-        return not self._connection.transaction_counter
-
-    async def begin(self) -> _Transaction:
-        """Begin transaction."""
-        async with self._connection.transaction_lock:
-            await self._connection.__aenter__()
-            await self._transaction.begin(self._is_root)
-            self._connection.transaction_counter += 1
-            self._connection.transactions.append(self)
-            return self
-
-    async def commit(self) -> None:
-        """Commit the transaction."""
-        async with self._connection.transaction_lock:
-            self._connection.transaction_counter -= 1
-            self._connection.transactions.remove(self)
-            await self._transaction.commit()
-            await self._connection.__aexit__(None, None, None)
-
-    async def rollback(self) -> None:
-        """Rollback the transaction."""
-        async with self._connection.transaction_lock:
-            self._connection.transaction_counter -= 1
-            self._connection.transactions.remove(self)
-            await self._transaction.rollback()
-            await self._connection.__aexit__(None, None, None)
-
-    def __await__(self) -> t.Generator:
-        """Creates new transaction instance and automatically begins it.
-        You still have to control commit() or rollback() calls.
-
-        Example:
-            tx = await db.transaction() # excutes BEGIN under the hood
-            tx.commit()
-        """
-        return self.begin().__await__()
-
-    async def __aenter__(self) -> _Transaction:
-        return await self.begin()
-
-    async def __aexit__(
-        self,
-        exc_type: t.Type[BaseException],
-        exc_val: BaseException,
-        exc_tb: TracebackType,
-    ) -> None:
-        if self in self._connection.transactions:
-            if exc_type is not None or self._force_rollback:
-                await self.rollback()
-            else:
-                await self.commit()
