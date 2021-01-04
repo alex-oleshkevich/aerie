@@ -27,7 +27,7 @@ class Table:
     columns: t.List[Column]
 
     def __iter__(self):
-        return iter(self.tables)
+        return iter(self.columns)
 
 
 @dataclass
