@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "aerie"
 version = "0.1.0"
-description = ""
+description = "A database toolkit."
 authors = ["alex.oleshkevich <alex.oleshkevich@gmail.com>"]
 
 [tool.poetry.dependencies]
