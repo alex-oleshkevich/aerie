@@ -4,7 +4,8 @@ import asyncio
 import typing as t
 from types import TracebackType
 
-from aerie.protocols import BaseDriver, Queryable
+from aerie.protocols import Queryable
+from aerie.drivers.base.driver import BaseDriver
 
 
 class Connection:

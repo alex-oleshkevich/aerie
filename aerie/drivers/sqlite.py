@@ -8,7 +8,8 @@ import aiosqlite
 import pypika as pk
 
 from aerie.exceptions import UniqueViolationError
-from aerie.protocols import BaseConnection, BaseDriver, BaseSavePoint, BaseTransaction
+from aerie.drivers.base.driver import BaseDriver
+from aerie.drivers.base.connection import BaseConnection, BaseSavePoint, BaseTransaction
 from aerie.terms import OnConflict
 from aerie.url import URL
 

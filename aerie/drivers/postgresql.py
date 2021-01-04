@@ -9,7 +9,8 @@ import asyncpg.pool
 import pypika as pk
 
 from aerie.exceptions import UniqueViolationError
-from aerie.protocols import BaseConnection, BaseDriver, BaseTransaction
+from aerie.drivers.base.driver import BaseDriver
+from aerie.drivers.base.connection import BaseConnection, BaseTransaction
 from aerie.terms import OnConflict
 from aerie.url import URL
 
