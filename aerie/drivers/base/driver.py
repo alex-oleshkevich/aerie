@@ -6,6 +6,7 @@ import pypika as pk
 from pypika import functions as fn
 
 from aerie.drivers.base.connection import BaseConnection
+from aerie.drivers.base.grammar import BaseGrammar
 from aerie.terms import OnConflict, Raw
 
 Q = t.TypeVar("Q", bound=pk.queries.Query)
@@ -18,8 +19,8 @@ IterableValues = t.Union[
 
 class BaseDriver(t.Generic[Q, QB]):
     dialect: str = "unknown"
-    can_create_database: bool = True
     query_class: t.Type[QB] = pk.queries.Query
+    grammar_class: t.Type[BaseGrammar] = BaseGrammar
 
     async def connect(self):
         raise NotImplementedError()
@@ -100,3 +101,6 @@ class BaseDriver(t.Generic[Q, QB]):
             else:
                 query = query.where(where)
         return query
+
+    def get_grammar(self) -> BaseGrammar:
+        return self.grammar_class()

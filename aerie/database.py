@@ -8,9 +8,10 @@ import pypika as pk
 
 from aerie.collections import Collection
 from aerie.connection import Connection, Transaction
+from aerie.drivers.base.driver import BaseDriver, IterableValues
 from aerie.exceptions import DriverNotRegistered
 from aerie.protocols import Queryable
-from aerie.drivers.base.driver import BaseDriver, IterableValues
+from aerie.schema.builder import SchemaBuilder
 from aerie.terms import OnConflict
 from aerie.url import URL
 from aerie.utils import import_string
@@ -241,6 +242,9 @@ class Database:
             connection = Connection(self.driver)
             self._connection_context.set(connection)
             return connection
+
+    def schema_editor(self) -> SchemaBuilder:
+        return SchemaBuilder(self.connection)
 
     async def __aenter__(self) -> Database:
         return await self.connect()

@@ -7,6 +7,7 @@ import pypika as pk
 
 from aerie.drivers.base.driver import BaseDriver
 from aerie.drivers.postgresql.connection import _Connection
+from aerie.drivers.postgresql.grammar import PostgresGrammar
 from aerie.terms import OnConflict
 from aerie.url import URL
 
@@ -16,6 +17,7 @@ class PostgresDriver(
 ):
     dialect = "postgresql"
     query_class = pk.dialects.PostgreSQLQuery
+    grammar_class = PostgresGrammar
 
     def __init__(self, url: URL) -> None:
         self.url = url

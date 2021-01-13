@@ -1,23 +1,21 @@
+from aerie.schema.builder import SchemaBuilder
+
 migration_id = '202011250213'
 
 
-def upgrade(builder):
-    with builder.create_table('profiles') as table:
-        table.string('github', null=True, default='')
-        table.index('github', name='github_idx', unique=False)
-        # table.unique_index('github')
-        table.foreign_key('users', on='user_id', references='users.id')
-        table.reference('users')  # add user_id and add foreign key
-        table.increments()
-        table.timestamps()
-        table.rename('user_profiles')
-
-    with builder.alter_table('users') as table:
-        table.change('username', length=512)
-        table.drop('')
-
-    builder.sql('select 1 as one')
+def upgrade(builder: SchemaBuilder):
+    with builder.create_table('users') as users:
+        users.increments()
+        users.string('email', index=True, primary_key=True)
+        users.string('first_name', null=True)
+        users.string('last_name', null=True)
+        users.string('bio', default='cool boy')
+        users.timestamps()
+        users.add_index(['first_name', 'last_name'], sort={
+            'first_name': 'desc nulls last',
+            'last_name': 'asc nulls last',
+        })
 
 
-def downgrade(builder):
-    pass
+def downgrade(builder: SchemaBuilder):
+    builder.drop_table('users')

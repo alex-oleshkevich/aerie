@@ -6,6 +6,7 @@ import pypika as pk
 
 from aerie.drivers.base.driver import BaseDriver
 from aerie.drivers.sqlite.connection import _Connection, _Pool
+from aerie.drivers.sqlite.grammar import SqliteGrammar
 from aerie.terms import OnConflict
 from aerie.url import URL
 
@@ -151,8 +152,8 @@ class SQLiteQueryBuilder(pk.queries.QueryBuilder):
 
 class SQLiteDriver(BaseDriver[SQLiteQuery, SQLiteQueryBuilder]):
     dialect = "sqlite"
-    can_create_database = False
     query_class = SQLiteQuery
+    grammar_class = SqliteGrammar
 
     def __init__(self, url: URL) -> None:
         self.url = url

@@ -20,6 +20,10 @@ class Connection:
         self.transaction_counter = 0
         self.transactions: t.List[Transaction] = []
 
+    @property
+    def driver(self) -> BaseDriver:
+        return self._driver
+
     async def execute(self, stmt: Queryable, params: t.Mapping = None) -> t.Any:
         async with self._query_lock:
             return await self._connection.execute(str(stmt), params)

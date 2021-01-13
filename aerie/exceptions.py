@@ -12,3 +12,7 @@ class IntegrityError(AerieException):
 
 class UniqueViolationError(IntegrityError):
     pass
+
+
+class OperationError(AerieException):
+    pass
