@@ -1,0 +1,8 @@
+*.pyc
+__pycache__
+.venv
+.vscode
+.coverage
+.idea
+dist/
+database.sqlite
