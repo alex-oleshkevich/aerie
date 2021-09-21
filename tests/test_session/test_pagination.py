@@ -7,7 +7,7 @@ from tests.conftest import DATABASE_URLS, User
 
 def test_page() -> None:
     rows = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    page = Page(rows, total_rows_count=101, page=2, page_size=10)
+    page = Page(rows, total_rows=101, page=2, page_size=10)
     assert page.total_pages == 11
     assert page.has_next
     assert page.has_previous
@@ -25,7 +25,7 @@ def test_page() -> None:
 
 def test_page_iterator() -> None:
     rows = [1, 2]
-    page = Page(rows, total_rows_count=2, page=1, page_size=2)
+    page = Page(rows, total_rows=2, page=1, page_size=2)
     assert rows == [p for p in page]
     assert next(page) == 1
     assert next(page) == 2
@@ -36,14 +36,14 @@ def test_page_iterator() -> None:
 
 def test_page_start_index_for_first_page() -> None:
     rows = [1, 2]
-    page = Page(rows, total_rows_count=2, page=1, page_size=2)
+    page = Page(rows, total_rows=2, page=1, page_size=2)
     assert page.start_index == 1
     assert page.end_index == 2
 
 
 def test_page_next_prev_pages() -> None:
     rows = [1, 2]
-    page = Page(rows, total_rows_count=1, page=1, page_size=1)
+    page = Page(rows, total_rows=1, page=1, page_size=1)
     assert page.has_next is False
     assert page.has_previous is False
     assert page.next_page == 1
