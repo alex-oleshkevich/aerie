@@ -1,7 +1,7 @@
 import pytest
 
 from aerie.database import Aerie
-from aerie.exceptions import TooManyResultsError
+from aerie.exceptions import NoResultsError, TooManyResultsError
 from aerie.session import DbSession
 from tests.conftest import DATABASE_URLS, User
 
@@ -41,8 +41,8 @@ async def test_one_when_many_results(url):
 async def test_one_when_no_results(url):
     db = Aerie(url)
     async with db.session() as session:
-        with pytest.raises(TooManyResultsError):
-            stmt = session.select(User)
+        with pytest.raises(NoResultsError):
+            stmt = session.select(User).where(User.id == -1)
             await session.one(stmt)
 
 

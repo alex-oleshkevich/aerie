@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 import sqlalchemy as sa
@@ -7,7 +9,7 @@ from aerie.models import Model
 
 DATABASE_URLS = [
     'sqlite+aiosqlite:///database.sqlite',
-    'postgresql+asyncpg://postgres:postgres@localhost/aerie',
+    os.environ.get('POSTGRES_URL', 'postgresql+asyncpg://postgres:postgres@localhost/aerie'),
 ]
 
 metadata = sa.MetaData()

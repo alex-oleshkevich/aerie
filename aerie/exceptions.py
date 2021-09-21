@@ -1,9 +1,13 @@
 from sqlalchemy import exc
 
 
-class TooManyResultsError(exc.MultipleResultsFound):
+class AerieError(Exception):  # pragma: no cover
+    """Base class for aerie errors."""
+
+
+class TooManyResultsError(AerieError, exc.MultipleResultsFound):  # pragma: no cover
     """Raised when .one() query matches more that one result."""
 
 
-class NoResultsError(exc.NoResultFound):
+class NoResultsError(AerieError, exc.NoResultFound):  # pragma: no cover
     """Raised when .one() matches no rows."""

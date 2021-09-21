@@ -12,14 +12,42 @@ def test_page() -> None:
     assert page.has_next
     assert page.has_previous
     assert page.previous_page == 1
+    assert page.next_page == 3
+    assert page.start_index == 11
+    assert page.end_index == 20
 
-    assert next(page) == 1
-    assert rows == [p for p in page]
-
-    assert rows[0] == 1
+    assert bool(page)
+    assert page[0] == 1
 
     with pytest.raises(IndexError):
         assert rows[11]
+
+
+def test_page_iterator() -> None:
+    rows = [1, 2]
+    page = Page(rows, total_rows_count=2, page=1, page_size=2)
+    assert rows == [p for p in page]
+    assert next(page) == 1
+    assert next(page) == 2
+
+    with pytest.raises(StopIteration):
+        assert next(page) == 3
+
+
+def test_page_start_index_for_first_page() -> None:
+    rows = [1, 2]
+    page = Page(rows, total_rows_count=2, page=1, page_size=2)
+    assert page.start_index == 1
+    assert page.end_index == 2
+
+
+def test_page_next_prev_pages() -> None:
+    rows = [1, 2]
+    page = Page(rows, total_rows_count=1, page=1, page_size=1)
+    assert page.has_next is False
+    assert page.has_previous is False
+    assert page.next_page == 1
+    assert page.previous_page == 1
 
 
 @pytest.mark.asyncio
@@ -29,6 +57,6 @@ async def test_paginate(url: str) -> None:
     async with db.session() as session:
         stmt = session.select(User)
         page = await session.paginate(stmt, 2, 1)
-        assert page.total_rows_count == 3
+        assert page.total_rows == 3
         assert len(page) == 1
         assert next(page).id == 2
