@@ -39,6 +39,8 @@ black = "^21.7b0"
 mypy = "^0.910"
 flake8 = "^3.9.2"
 pytest-sugar = "^0.9.4"
+aiosqlite = "^0.17.0"
+asyncpg = "^0.24.0"
 
 [tool.poetry.extras]
 sqlite = ["asyncpg"]
