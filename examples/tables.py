@@ -1,16 +1,16 @@
 import asyncio
 import os
-
 import sqlalchemy as sa
 from sqlalchemy import insert, select
 
 from aerie import metadata
 from aerie.database import Aerie
 
-DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite+aiosqlite:///:memory')
+DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite+aiosqlite:///:memory:')
 
 users = sa.Table(
-    'users', metadata,
+    'users',
+    metadata,
     sa.Column(sa.Integer, name='id', primary_key=True),
     sa.Column(sa.String, name='name'),
 )
@@ -25,11 +25,13 @@ async def main():
 
     # create some users
     async with db.transaction() as tx:
-        stmt = insert(users).values([
-            {'id': 1, 'name': 'One'},
-            {'id': 2, 'name': 'Two'},
-            {'id': 3, 'name': 'Three'},
-        ])
+        stmt = insert(users).values(
+            [
+                {'id': 1, 'name': 'One'},
+                {'id': 2, 'name': 'Two'},
+                {'id': 3, 'name': 'Three'},
+            ]
+        )
         await tx.execute(stmt)
 
         stmt = select(users).where(users.c.id == 2)

@@ -28,9 +28,10 @@ For SQLite use "sqlite" extra. To install all drivers use "full" extra.
 ## Features
 
 - full async/await support
-- SQLAlchemy Core support
+- plain SQL with bound params
+- SQLAlchemy query builders support
 - SQLAlchemy ORM support
-- neat interface
+- pagination
 
 ## TODO
 

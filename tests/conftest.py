@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from aerie.models import Model
 
 DATABASE_URLS = [
-    'sqlite+aiosqlite:///database.sqlite',
+    'sqlite+aiosqlite:///:memory:',
     os.environ.get('POSTGRES_URL', 'postgresql+asyncpg://postgres:postgres@localhost/aerie'),
 ]
 

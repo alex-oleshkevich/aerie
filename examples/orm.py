@@ -1,11 +1,10 @@
 import asyncio
 import os
-
 import sqlalchemy as sa
 
 from aerie import Aerie, Model
 
-DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite+aiosqlite:///:memory')
+DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite+aiosqlite:///:memory:')
 
 
 class User(Model):
@@ -26,11 +25,13 @@ async def main():
 
     # create some users
     async with db.session() as session:
-        session.add_all([
-            User(id=1, name='One'),
-            User(id=2, name='Two'),
-            User(id=3, name='Three'),
-        ])
+        session.add_all(
+            [
+                User(id=1, name='One'),
+                User(id=2, name='Two'),
+                User(id=3, name='Three'),
+            ]
+        )
         await session.flush()
 
         # get first user

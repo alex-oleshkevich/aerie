@@ -1,13 +1,12 @@
 import asyncio
 import os
-
 import sqlalchemy as sa
 
 from aerie import Aerie, Model
 
 PAGE = int(os.environ.get('PAGE', 1))
 PAGE_SIZE = int(os.environ.get('PAGE_SIZE', 20))
-DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite+aiosqlite:///:memory')
+DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite+aiosqlite:///:memory:')
 
 
 class User(Model):
@@ -28,9 +27,7 @@ async def main():
 
     # create some users
     async with db.session() as session:
-        session.add_all([
-            User(id=x + 1, name='User %s' % (x + 1)) for x in range(100)
-        ])
+        session.add_all([User(id=x + 1, name='User %s' % (x + 1)) for x in range(100)])
         await session.flush()
 
         stmt = session.select(User)
@@ -44,9 +41,13 @@ async def main():
         print('Prev page number: %s' % page.previous_page)
         print('Has next page: %s' % page.has_next)
         print('Next page number: %s' % page.next_page)
-        print('Displaying rows: %s - %s' % (
-            page.start_index, page.end_index,
-        ))
+        print(
+            'Displaying rows: %s - %s'
+            % (
+                page.start_index,
+                page.end_index,
+            )
+        )
         print('Rows %s:' % [r.name for r in page])
 
 
