@@ -1,7 +1,5 @@
 import os
-
 import pytest
-
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import create_async_engine
 
@@ -14,7 +12,8 @@ DATABASE_URLS = [
 
 metadata = sa.MetaData()
 users = sa.Table(
-    'users', metadata,
+    'users',
+    metadata,
     sa.Column(sa.Integer, name='id', primary_key=True),
     sa.Column(sa.String, name='name', nullable=True),
 )
@@ -43,11 +42,13 @@ async def fill_sample_data(create_tables):
         engine = create_async_engine(url)
         async with engine.begin() as conn:
             await conn.execute(
-                users.insert([
-                    {'id': 1, 'name': 'User One'},
-                    {'id': 2, 'name': 'User Two'},
-                    {'id': 3, 'name': 'User Three'},
-                ])
+                users.insert(
+                    [
+                        {'id': 1, 'name': 'User One'},
+                        {'id': 2, 'name': 'User Two'},
+                        {'id': 3, 'name': 'User Three'},
+                    ]
+                )
             )
     yield
     for url in DATABASE_URLS:

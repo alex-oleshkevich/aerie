@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import math
 import typing as t
-
 from sqlalchemy import exists, select
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -81,7 +80,6 @@ class Page(t.Generic[M]):
 
 
 class DbSession(AsyncSession):
-
     def select(self, model: t.Type[M]) -> Select:
         return select(model)
 

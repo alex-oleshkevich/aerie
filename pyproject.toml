@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aerie"
-description = "A neat async database toolkit."
+description = "An async database toolkit."
 version = "0.2.0"
 authors = ["Alex Oleshkevich <alex.oleshkevich@gmail.com>"]
 license = "MIT"

@@ -1,7 +1,6 @@
-import typing as t
-
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, create_async_engine
+import typing as t
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from aerie.models import metadata
@@ -25,7 +24,10 @@ class Aerie:
         self.url = url
         self.metadata = sa.MetaData()
         self._engine = create_async_engine(
-            url, echo=echo, isolation_level=isolation_level, json_serializer=json_serializer,
+            url,
+            echo=echo,
+            isolation_level=isolation_level,
+            json_serializer=json_serializer,
             json_deserializer=json_deserializer,
         )
         self._session_maker = sessionmaker(bind=self._engine, class_=DbSession, expire_on_commit=False)
@@ -38,19 +40,13 @@ class Aerie:
 
     async def create_tables(self, tables: t.List[t.Union[str, sa.Table]] = None) -> None:
         if tables:
-            tables = [
-                metadata.tables[table] if isinstance(table, str) else table
-                for table in tables
-            ]
+            tables = [metadata.tables[table] if isinstance(table, str) else table for table in tables]
         async with self._engine.begin() as connection:
             await connection.run_sync(metadata.create_all, tables=tables)
 
     async def drop_tables(self, tables: t.List[t.Union[str, sa.Table]] = None) -> None:
         if tables:
-            tables = [
-                metadata.tables[table] if isinstance(table, str) else table
-                for table in tables
-            ]
+            tables = [metadata.tables[table] if isinstance(table, str) else table for table in tables]
 
         async with self._engine.begin() as connection:
             await connection.run_sync(metadata.drop_all, tables=tables)
