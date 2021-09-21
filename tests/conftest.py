@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from aerie.models import Model
 
 DATABASE_URLS = [
-    'sqlite+aiosqlite:///:memory:',
+    # 'sqlite+aiosqlite:///:memory:',
+    'sqlite+aiosqlite:////tmp/aerie.sqlite',
     os.environ.get('POSTGRES_URL', 'postgresql+asyncpg://postgres:postgres@localhost/aerie'),
 ]
 
@@ -25,7 +26,7 @@ class User(Model):
     name = sa.Column(sa.String)
 
 
-@pytest.fixture()
+@pytest.fixture(autouse=True)
 @pytest.mark.asyncio
 async def create_tables():
     for url in DATABASE_URLS:
@@ -33,14 +34,6 @@ async def create_tables():
         async with engine.begin() as conn:
             await conn.run_sync(metadata.drop_all)
             await conn.run_sync(metadata.create_all)
-
-
-@pytest.fixture(autouse=True)
-@pytest.mark.asyncio
-async def fill_sample_data(create_tables):
-    for url in DATABASE_URLS:
-        engine = create_async_engine(url)
-        async with engine.begin() as conn:
             await conn.execute(
                 users.insert(
                     [
@@ -50,8 +43,3 @@ async def fill_sample_data(create_tables):
                     ]
                 )
             )
-    yield
-    for url in DATABASE_URLS:
-        engine = create_async_engine(url)
-        async with engine.begin() as conn:
-            await conn.execute(users.delete())
