@@ -16,7 +16,15 @@ jobs:
             fail-fast: false
             matrix:
                 python-version: [ '3.8', '3.9', '3.10.0-rc.1' ]
-
+        services:
+            postgres:
+                image: postgres:13
+                env:
+                    POSTGRES_DB: aerie
+                    POSTGRES_USER: postgres
+                    POSTGRES_PASSWORD: postgres
+                ports:
+                    - 5432:5432
         steps:
             -   uses: actions/checkout@v2
 
