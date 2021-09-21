@@ -1,15 +1,17 @@
+import asyncio
 import os
 import pytest
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import create_async_engine
 
+from aerie import Aerie
 from aerie.models import Model
 
 DATABASE_URLS = [
-    # 'sqlite+aiosqlite:///:memory:',
-    'sqlite+aiosqlite:////tmp/aerie.sqlite',
+    'sqlite+aiosqlite:///:memory:',
     os.environ.get('POSTGRES_URL', 'postgresql+asyncpg://postgres:postgres@localhost/aerie'),
 ]
+
+databases = [Aerie(url) for url in DATABASE_URLS]
 
 metadata = sa.MetaData()
 users = sa.Table(
@@ -26,20 +28,26 @@ class User(Model):
     name = sa.Column(sa.String)
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(scope='session')
+def event_loop():
+    return asyncio.get_event_loop()
+
+
+@pytest.fixture(autouse=True, scope='session')
 @pytest.mark.asyncio
 async def create_tables():
-    for url in DATABASE_URLS:
-        engine = create_async_engine(url)
-        async with engine.begin() as conn:
-            await conn.run_sync(metadata.drop_all)
-            await conn.run_sync(metadata.create_all)
-            await conn.execute(
-                users.insert(
-                    [
-                        {'id': 1, 'name': 'User One'},
-                        {'id': 2, 'name': 'User Two'},
-                        {'id': 3, 'name': 'User Three'},
-                    ]
-                )
+    for db in databases:
+        await db.drop_tables()
+        await db.create_tables()
+        await db.execute(
+            users.insert(
+                [
+                    {'id': 1, 'name': 'User One'},
+                    {'id': 2, 'name': 'User Two'},
+                    {'id': 3, 'name': 'User Three'},
+                ]
             )
+        )
+    yield
+    for db in databases:
+        await db.drop_tables()

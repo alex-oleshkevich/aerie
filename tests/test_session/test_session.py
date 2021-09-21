@@ -1,15 +1,13 @@
 import pytest
 
-from aerie.database import Aerie
 from aerie.exceptions import NoResultsError, TooManyResultsError
 from aerie.session import DbSession
-from tests.conftest import DATABASE_URLS, User
+from tests.conftest import User, databases
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('url', DATABASE_URLS)
-async def test_first(url):
-    db = Aerie(url)
+@pytest.mark.parametrize('db', databases)
+async def test_first(db):
     async with db.session() as session:
         stmt = session.select(User)
         user = await session.first(stmt)
@@ -17,9 +15,8 @@ async def test_first(url):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('url', DATABASE_URLS)
-async def test_one(url):
-    db = Aerie(url)
+@pytest.mark.parametrize('db', databases)
+async def test_one(db):
     async with db.session() as session:
         stmt = session.select(User).where(User.id == 1)
         user = await session.one(stmt)
@@ -27,9 +24,8 @@ async def test_one(url):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('url', DATABASE_URLS)
-async def test_one_when_many_results(url):
-    db = Aerie(url)
+@pytest.mark.parametrize('db', databases)
+async def test_one_when_many_results(db):
     async with db.session() as session:
         with pytest.raises(TooManyResultsError):
             stmt = session.select(User)
@@ -37,9 +33,8 @@ async def test_one_when_many_results(url):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('url', DATABASE_URLS)
-async def test_one_when_no_results(url):
-    db = Aerie(url)
+@pytest.mark.parametrize('db', databases)
+async def test_one_when_no_results(db):
     async with db.session() as session:
         with pytest.raises(NoResultsError):
             stmt = session.select(User).where(User.id == -1)
@@ -47,9 +42,8 @@ async def test_one_when_no_results(url):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('url', DATABASE_URLS)
-async def test_one_or_none(url):
-    db = Aerie(url)
+@pytest.mark.parametrize('db', databases)
+async def test_one_or_none(db):
     async with db.session() as session:
         stmt = session.select(User).where(User.id == 1)
         user = await session.one_or_none(stmt)
@@ -57,9 +51,8 @@ async def test_one_or_none(url):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('url', DATABASE_URLS)
-async def test_one_or_none_when_many_results(url):
-    db = Aerie(url)
+@pytest.mark.parametrize('db', databases)
+async def test_one_or_none_when_many_results(db):
     async with db.session() as session:
         with pytest.raises(TooManyResultsError):
             stmt = session.select(User)
@@ -67,18 +60,16 @@ async def test_one_or_none_when_many_results(url):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('url', DATABASE_URLS)
-async def test_one_or_none_when_no_results(url):
-    db = Aerie(url)
+@pytest.mark.parametrize('db', databases)
+async def test_one_or_none_when_no_results(db):
     async with db.session() as session:
         stmt = session.select(User).where(User.id == -1)
         assert await session.one_or_none(stmt) is None
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('url', DATABASE_URLS)
-async def test_all(url):
-    db = Aerie(url)
+@pytest.mark.parametrize('db', databases)
+async def test_all(db):
     async with db.session() as session:
         stmt = session.select(User)
         user = await session.all(stmt)
@@ -86,18 +77,16 @@ async def test_all(url):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('url', DATABASE_URLS)
-async def test_count(url):
-    db = Aerie(url)
+@pytest.mark.parametrize('db', databases)
+async def test_count(db):
     async with db.session() as session:
         stmt = session.select(User)
         assert await session.count(stmt) == 3
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('url', DATABASE_URLS)
-async def test_exists(url):
-    db = Aerie(url)
+@pytest.mark.parametrize('db', databases)
+async def test_exists(db):
     async with db.session() as session:  # type: DbSession
         stmt = session.select(User).where(User.id == 1)
         assert await session.exists(stmt) is True
@@ -107,9 +96,8 @@ async def test_exists(url):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('url', DATABASE_URLS)
-async def test_add(url):
-    db = Aerie(url)
+@pytest.mark.parametrize('db', databases)
+async def test_add(db):
     async with db.session() as session:  # type: DbSession
         session.add(User(id=4, name='User Four'))
         await session.flush()
