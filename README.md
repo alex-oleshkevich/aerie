@@ -38,7 +38,7 @@ For SQLite use "sqlite" extra. To install all drivers use "full" extra.
 * simplify column definition: `sa.Column(sa.Integer)` -> `models.IntergerField()`
 * enhance `DbSession` with executable API: `await session.query(User).where(User.id == 1).one_or_none()`
 * integrate with Alembic CLI
-* multiple metadata support (for multiple distinct databasees)
+* multiple metadata objects support (for multiple distinct databases)
 
 ## Quick start
 
@@ -161,9 +161,10 @@ async with db.session() as session:
 
     for user in page:
         print(user)
-        print('Next page: %s' % page.next_page)
-        print('Previous page: %s' % page.previous_page)
-        print('Displaying items: %s - %s' % (page.start_index, page.end_index))
+
+    print('Next page: %s' % page.next_page)
+    print('Previous page: %s' % page.previous_page)
+    print('Displaying items: %s - %s' % (page.start_index, page.end_index))
 ```
 
 The page object has more helper attributes:
