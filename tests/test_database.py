@@ -46,3 +46,17 @@ async def test_transaction(url):
     async with db.transaction() as tx:
         result = await tx.execute(text('select 1'))
         assert result.scalar_one() == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('url', DATABASE_URLS)
+async def test_executes_dsl(url):
+    db = Aerie(url)
+    await db.execute(text('select 1'))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('url', DATABASE_URLS)
+async def test_executes_string_query(url):
+    db = Aerie(url)
+    await db.execute('select 1')

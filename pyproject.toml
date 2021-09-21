@@ -27,6 +27,7 @@ classifiers = [
 python = "^3.8.0"
 aiosqlite = { version = "^0.17.0", optional = true }
 asyncpg = { version = "^0.24.0", optional = true }
+SQLAlchemy = {extras = ["asyncio"], version = "^1.4.23"}
 
 [tool.poetry.dev-dependencies]
 sqlalchemy2-stubs = "^0.0.2-alpha.15"

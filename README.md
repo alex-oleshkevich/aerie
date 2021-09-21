@@ -23,7 +23,7 @@ pip install aerie[postgresql]
 poetry add aerie[postgresql]
 ```
 
-For Sqlite use "sqlite" extra. To install all drivers use "full" extra.
+For SQLite use "sqlite" extra. To install all drivers use "full" extra.
 
 ## Features
 
@@ -54,8 +54,6 @@ A general usage is:
 * define ORM models
 * create tables in the database (or, preferably, use Alembic migrations)
 * obtain a session and perform database queries
-
-Find full code listing in [examples/session.py](examples/orm.py) file.
 
 ### Aerie instance
 
@@ -102,7 +100,7 @@ users = sa.Table(
     sa.Column(sa.String, name='name'),
 )
 
-# create tables 
+# create tables
 await db.create_tables()
 
 async with db.transaction() as tx:
@@ -129,7 +127,7 @@ class User(Model):
     name = sa.Column(sa.String)
 
 
-# create tables 
+# create tables
 await db.create_tables()
 
 async with db.session() as session:

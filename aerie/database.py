@@ -1,7 +1,9 @@
 import sqlalchemy as sa
 import typing as t
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql import ClauseElement
 
 from aerie.models import metadata
 from aerie.session import DbSession
@@ -37,6 +39,11 @@ class Aerie:
 
     def transaction(self) -> AsyncEngine._trans_ctx:
         return self._engine.begin()
+
+    async def execute(self, stmt: t.Union[str, ClauseElement], params: t.Mapping = None) -> None:
+        async with self._engine.begin() as connection:
+            stmt = text(stmt) if isinstance(stmt, str) else stmt
+            await connection.execute(stmt, params)
 
     async def create_tables(self, tables: t.List[t.Union[str, sa.Table]] = None) -> None:
         if tables:
