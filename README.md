@@ -1,6 +1,6 @@
 # Aerie
 
-A sweat wrapper around SQLAlchemy made to support asynchronous workloads.
+A wrapper around SQLAlchemy made to support asynchronous workloads.
 
 [Aerie](https://baldursgate.fandom.com/wiki/Aerie) - is an [avariel](https://baldursgate.fandom.com/wiki/Elf#Avariel)
 (or winged elf) from Baldur's Gate II game.

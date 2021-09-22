@@ -3,12 +3,13 @@ from __future__ import annotations
 import math
 import typing as t
 from sqlalchemy import exists, select
-from sqlalchemy.exc import MultipleResultsFound, NoResultFound
+from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 from sqlalchemy.sql.functions import func
 
-from aerie.exceptions import NoResultsError, TooManyResultsError
+from aerie.exceptions import TooManyResultsError
+from aerie.utils import convert_exceptions
 
 M = t.TypeVar('M')
 
@@ -98,13 +99,9 @@ class DbSession(AsyncSession):
         :raise NoResultFound - when no rows matched
         """
 
-        try:
+        with convert_exceptions():
             result = await self.execute(stmt, params)
             return result.scalars().one()
-        except MultipleResultsFound as exc:
-            raise TooManyResultsError() from exc
-        except NoResultFound as exc:
-            raise NoResultsError() from exc
 
     async def one_or_none(self, stmt: Select, params: t.Mapping = None) -> t.Optional[M]:
         """Get one result or return None if none found..

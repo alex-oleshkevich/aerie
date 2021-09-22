@@ -1,11 +1,11 @@
 import pytest
 import sqlalchemy as sa
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.exc import DatabaseError
 
 from aerie.models import metadata
 from aerie.session import DbSession
-from tests.conftest import databases
+from tests.conftest import databases, users
 
 sample_table = sa.Table('sample', metadata, sa.Column(sa.Integer, name='id'))
 
@@ -46,10 +46,40 @@ async def test_transaction(db):
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
 async def test_executes_dsl(db):
-    await db.execute(text('select 1'))
+    await db.query(text('select 1')).execute()
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
 async def test_executes_string_query(db):
-    await db.execute('select 1')
+    await db.query('select 1').execute()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('db', databases)
+async def test_count_dsl(db):
+    stmt = select(users).where(users.c.id == 1)
+    assert await db.query(stmt).count() == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('db', databases)
+async def test_count_string_query(db):
+    assert await db.query('select * from users').count() == 3
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('db', databases)
+async def test_exists_dsl(db):
+    stmt = select(users).where(users.c.id == 1)
+    assert await db.query(stmt).exists() is True
+
+    stmt = select(users).where(users.c.id == -1)
+    assert await db.query(stmt).exists() is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('db', databases)
+async def test_exists_string_query(db):
+    assert await db.query('select * from users where id = 1').exists() is True
+    assert await db.query('select * from users where id = -1').exists() is False

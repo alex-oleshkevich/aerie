@@ -11,6 +11,7 @@ async def test_first(db):
     async with db.session() as session:
         stmt = session.select(User)
         user = await session.first(stmt)
+        assert isinstance(user, User)
         assert user.id == 1
 
 

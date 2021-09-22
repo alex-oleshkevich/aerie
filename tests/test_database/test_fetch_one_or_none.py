@@ -7,7 +7,7 @@ from tests.conftest import databases
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
 async def test_fetch_one_or_none(db):
-    row = await db.fetch_one_or_none('select * from users where id = 1')
+    row = await db.query('select * from users where id = 1').one_or_none()
     assert row.id == 1
 
 
@@ -15,10 +15,10 @@ async def test_fetch_one_or_none(db):
 @pytest.mark.parametrize('db', databases)
 async def test_fetch_one_or_none_many_results(db):
     with pytest.raises(TooManyResultsError):
-        await db.fetch_one_or_none('select * from users')
+        await db.query('select * from users').one_or_none()
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
 async def test_fetch_one_or_none_no_results(db):
-    assert await db.fetch_one_or_none('select * from users where id = -1') is None
+    assert await db.query('select * from users where id = -1').one_or_none() is None

@@ -39,7 +39,7 @@ async def create_tables():
     for db in databases:
         await db.drop_tables()
         await db.create_tables()
-        await db.execute(
+        await db.query(
             users.insert(
                 [
                     {'id': 1, 'name': 'User One'},
@@ -47,7 +47,7 @@ async def create_tables():
                     {'id': 3, 'name': 'User Three'},
                 ]
             )
-        )
+        ).execute()
     yield
     for db in databases:
         await db.drop_tables()
