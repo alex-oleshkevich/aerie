@@ -77,10 +77,9 @@ At this step Aerie is ready to work. Create a new transaction and execute any qu
 ```python
 from sqlalchemy.sql import text
 
-async with db.transaction() as tx:
-    # assuming "users" table exists
-    sql = text('select * from users where user_id = :user_id')
-    rows = await tx.execute(sql, {'user_id': 1})
+# assuming "users" table exists
+sql = text('select * from users where user_id = :user_id')
+rows = await db.query(sql, {'user_id': 1}).all()
 ```
 
 Full listing [examples/raw_sql.py](examples/raw_sql.py)
@@ -104,9 +103,8 @@ users = sa.Table(
 # create tables
 await db.create_tables()
 
-async with db.transaction() as tx:
-    stmt = select(users).where(users.c.id == 2)
-    rows = await tx.execute(stmt)
+stmt = select(users).where(users.c.id == 2)
+rows = await db.query(stmt).all()
 ```
 
 Full listing [examples/tables.py](examples/tables.py)

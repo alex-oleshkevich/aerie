@@ -1,7 +1,6 @@
 import sqlalchemy as sa
 import typing as t
 from sqlalchemy import MetaData, text
-from sqlalchemy.engine import Row
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import Executable
@@ -49,7 +48,7 @@ class Aerie:
         """Establish a new transaction."""
         return self._engine.begin()
 
-    def query(self, stmt: t.Union[str, Executable], params: t.Mapping = None) -> ExecutableQuery[Row]:
+    def query(self, stmt: Executable, params: t.Mapping = None) -> ExecutableQuery:
         return ExecutableQuery(self._engine, stmt, params)
 
     async def create_tables(self, tables: t.List[t.Union[str, sa.Table]] = None) -> None:

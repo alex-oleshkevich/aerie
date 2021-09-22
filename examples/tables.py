@@ -39,6 +39,11 @@ async def main():
         user_id2 = result.one()
         print('User with ID 2 has name: %s' % user_id2.name)
 
+    # you can read db w/o transaction
+    stmt = select(users).where(users.c.id == 3)
+    user_id3 = await db.query(stmt).one()
+    print('User with ID 3 has name: %s' % user_id3.name)
+
 
 if __name__ == '__main__':
     asyncio.run(main())

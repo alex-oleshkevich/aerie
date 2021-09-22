@@ -5,7 +5,7 @@ import typing as t
 from sqlalchemy import exists, select
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql import Select
+from sqlalchemy.sql import Executable, Select
 from sqlalchemy.sql.functions import func
 
 from aerie.exceptions import TooManyResultsError
@@ -84,15 +84,15 @@ class DbSession(AsyncSession):
     def select(self, model: t.Type[M]) -> Select:
         return select(model)
 
-    async def all(self, stmt: Select, params: t.Mapping = None) -> t.Sequence:
+    async def all(self, stmt: Executable, params: t.Mapping = None) -> t.Sequence:
         result = await self.execute(stmt, params)
         return result.scalars().all()
 
-    async def first(self, stmt: Select, params: t.Mapping = None) -> t.Optional[M]:
+    async def first(self, stmt: Executable, params: t.Mapping = None) -> t.Optional[M]:
         result = await self.execute(stmt, params)
         return result.scalars().first()
 
-    async def one(self, stmt: Select, params: t.Mapping = None) -> M:
+    async def one(self, stmt: Executable, params: t.Mapping = None) -> M:
         """Get exactly one result or raise.
 
         :raise MultipleResultsFound - when more that one row matched
@@ -103,7 +103,7 @@ class DbSession(AsyncSession):
             result = await self.execute(stmt, params)
             return result.scalars().one()
 
-    async def one_or_none(self, stmt: Select, params: t.Mapping = None) -> t.Optional[M]:
+    async def one_or_none(self, stmt: Executable, params: t.Mapping = None) -> t.Optional[M]:
         """Get one result or return None if none found..
 
         :raise MultipleResultsFound"""
@@ -114,11 +114,11 @@ class DbSession(AsyncSession):
         except MultipleResultsFound as exc:
             raise TooManyResultsError() from exc
 
-    async def count(self, stmt: Select, params: t.Mapping = None) -> int:
+    async def count(self, stmt: Executable, params: t.Mapping = None) -> int:
         stmt = select(func.count('*')).select_from(stmt)
         return await self.scalar(stmt, params)
 
-    async def exists(self, stmt: Select, params: t.Mapping = None) -> bool:
+    async def exists(self, stmt: Executable, params: t.Mapping = None) -> bool:
         return await self.scalar(select(exists(stmt)), params)
 
     async def paginate(self, stmt: Select, page: int = 1, page_size: int = 50, params: t.Mapping = None) -> Page:

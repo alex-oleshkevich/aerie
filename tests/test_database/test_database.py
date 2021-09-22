@@ -45,41 +45,22 @@ async def test_transaction(db):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
-async def test_executes_dsl(db):
+async def test_executes(db):
     await db.query(text('select 1')).execute()
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
-async def test_executes_string_query(db):
-    await db.query('select 1').execute()
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize('db', databases)
-async def test_count_dsl(db):
+async def test_count(db):
     stmt = select(users).where(users.c.id == 1)
     assert await db.query(stmt).count() == 1
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
-async def test_count_string_query(db):
-    assert await db.query('select * from users').count() == 3
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize('db', databases)
-async def test_exists_dsl(db):
+async def test_exists(db):
     stmt = select(users).where(users.c.id == 1)
     assert await db.query(stmt).exists() is True
 
     stmt = select(users).where(users.c.id == -1)
     assert await db.query(stmt).exists() is False
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize('db', databases)
-async def test_exists_string_query(db):
-    assert await db.query('select * from users where id = 1').exists() is True
-    assert await db.query('select * from users where id = -1').exists() is False
