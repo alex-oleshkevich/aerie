@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "aerie"
 description = "An async database toolkit."
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Alex Oleshkevich <alex.oleshkevich@gmail.com>"]
 license = "MIT"
 readme = "README.md"
@@ -43,8 +43,8 @@ aiosqlite = "^0.17.0"
 asyncpg = "^0.24.0"
 
 [tool.poetry.extras]
-sqlite = ["asyncpg"]
-postgresql = ["aiosqlite"]
+sqlite = ["aiosqlite"]
+postgresql = ["asyncpg"]
 full = ["aiosqlite", "asyncpg"]
 
 [build-system]
