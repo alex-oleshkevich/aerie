@@ -10,6 +10,7 @@ def test_page() -> None:
     assert page.total_pages == 11
     assert page.has_next
     assert page.has_previous
+    assert page.has_other
     assert page.previous_page == 1
     assert page.next_page == 3
     assert page.start_index == 11
@@ -33,6 +34,11 @@ def test_page_iterator() -> None:
         assert next(page) == 3
 
 
+def test_page_no_other_pages() -> None:
+    page = Page([], total_rows=2, page=1, page_size=2)
+    assert not page.has_other
+
+
 def test_page_start_index_for_first_page() -> None:
     rows = [1, 2]
     page = Page(rows, total_rows=2, page=1, page_size=2)
@@ -54,7 +60,19 @@ def test_page_next_prev_pages() -> None:
 async def test_paginate(db) -> None:
     async with db.session() as session:
         stmt = session.select(User)
-        page = await session.paginate(stmt, 2, 1)
+        page = await session.query(stmt).paginate(2, 1)
         assert page.total_rows == 3
         assert len(page) == 1
         assert next(page).id == 2
+
+
+def test_page_repr() -> None:
+    rows = [1, 2]
+    page = Page(rows, total_rows=2, page=1, page_size=2)
+    assert repr(page) == '<Page: page=1, total_pages=1>'
+
+
+def test_page_str() -> None:
+    rows = [1, 2]
+    page = Page(rows, total_rows=2, page=1, page_size=2)
+    assert str(page) == 'Page 1 of 1, rows 1 - 2 of 2.'

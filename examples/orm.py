@@ -13,10 +13,10 @@ class User(Model):
     name = sa.Column(sa.String)
 
     def __str__(self) -> str:
-        return self.name
+        return self.name or 'n/a'
 
 
-async def main():
+async def main() -> None:
     db = Aerie(DATABASE_URL)
 
     # create tables
@@ -36,7 +36,7 @@ async def main():
 
         # get first user
         stmt = session.select(User)
-        user = await session.first(stmt)
+        user = await session.query(stmt).first()
         print('First user: %s' % user)
 
         # get user by PK
@@ -45,12 +45,12 @@ async def main():
 
         # user by condition
         stmt = session.select(User).where(User.name == 'One')
-        user = await session.one(stmt)
+        user = await session.query(stmt).one()
         print('User by where clause: %s' % user)
 
         # all users
         stmt = session.select(User)
-        users = await session.all(stmt)
+        users = await session.query(stmt).all()
         print('All users: %s' % [str(u) for u in users])
 
 

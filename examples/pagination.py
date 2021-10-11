@@ -15,10 +15,10 @@ class User(Model):
     name = sa.Column(sa.String)
 
     def __str__(self) -> str:
-        return self.name
+        return self.name or 'n/a'
 
 
-async def main():
+async def main() -> None:
     db = Aerie(DATABASE_URL)
 
     # create tables
@@ -31,7 +31,7 @@ async def main():
         await session.flush()
 
         stmt = session.select(User)
-        page = await session.paginate(stmt, page=PAGE, page_size=PAGE_SIZE)
+        page = await session.query(stmt).paginate(PAGE, PAGE_SIZE)
 
         print('Current page: %s' % page.page)
         print('Current page size: %s' % page.page_size)

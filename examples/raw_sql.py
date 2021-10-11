@@ -16,7 +16,7 @@ users = sa.Table(
 )
 
 
-async def main():
+async def main() -> None:
     db = Aerie(DATABASE_URL)
 
     # create tables

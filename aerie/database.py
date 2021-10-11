@@ -40,7 +40,7 @@ class Aerie:
         )
         self._session_maker = sessionmaker(bind=self._engine, class_=DbSession, expire_on_commit=False)
 
-    def session(self) -> DbSession:
+    def session(self) -> t.AsyncContextManager[DbSession]:
         """Create a new session object."""
         return self._session_maker()
 

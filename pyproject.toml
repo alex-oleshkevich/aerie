@@ -83,6 +83,7 @@ exclude_lines = [
 disallow_untyped_defs = true
 ignore_missing_imports = true
 exclude = "^tests/"
+plugins = ["sqlalchemy.ext.mypy.plugin"]
 
 [tool.pytest.ini_options]
 python_files = ["tests.py", "test_*.py", "*_tests.py"]

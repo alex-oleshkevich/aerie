@@ -13,6 +13,7 @@ Access http://localhost:8000/create to create a new user.
 """
 import os
 import sqlalchemy as sa
+import typing as t
 from fastapi import Depends, FastAPI
 from sqlalchemy import select
 
@@ -29,10 +30,10 @@ class User(Model):
     name = sa.Column(sa.String)
 
     def __str__(self) -> str:
-        return self.name
+        return self.name or 'n/a'
 
 
-async def db_session():
+async def db_session() -> t.AsyncGenerator[DbSession, None]:
     async with db.session() as session:
         yield session
 
@@ -41,8 +42,8 @@ app = FastAPI(on_startup=[db.create_tables], on_shutdown=[db.drop_tables])
 
 
 @app.get("/create")
-async def create_user_view(session: DbSession = Depends(db_session)):
-    count = await session.count(select(User))
+async def create_user_view(session: DbSession = Depends(db_session)) -> t.Mapping:
+    count = await session.query(select(User)).count()
     user = User(id=count, name=f'User {count}')
     session.add(user)
     await session.commit()
@@ -51,6 +52,6 @@ async def create_user_view(session: DbSession = Depends(db_session)):
 
 
 @app.get("/")
-async def list_users_view(session: DbSession = Depends(db_session)):
-    users = await session.all(select(User))
+async def list_users_view(session: DbSession = Depends(db_session)) -> t.List:
+    users = await session.query(select(User)).all()
     return [u.name for u in users]
