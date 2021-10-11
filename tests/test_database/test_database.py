@@ -3,6 +3,7 @@ import sqlalchemy as sa
 from sqlalchemy import select, text
 from sqlalchemy.exc import DatabaseError
 
+from aerie import Aerie
 from aerie.models import metadata
 from aerie.session import DbSession
 from tests.conftest import databases, users
@@ -12,13 +13,13 @@ sample_table = sa.Table('sample', metadata, sa.Column(sa.Integer, name='id'))
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
-def test_returns_session(db):
+def test_returns_session(db: Aerie) -> None:
     assert isinstance(db.session(), DbSession)
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
-async def test_creates_tables(db):
+async def test_creates_tables(db: Aerie) -> None:
     await db.create_tables()
     async with db.session() as session:
         await session.execute(text('select * from sample'))
@@ -27,7 +28,7 @@ async def test_creates_tables(db):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
-async def test_drops_tables(db):
+async def test_drops_tables(db: Aerie) -> None:
     await db.create_tables(['sample'])
     await db.drop_tables(['sample'])
     async with db.session() as session:
@@ -37,7 +38,7 @@ async def test_drops_tables(db):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
-async def test_transaction(db):
+async def test_transaction(db: Aerie) -> None:
     async with db.transaction() as tx:
         result = await tx.execute(text('select 1'))
     assert result.scalar_one() == 1
@@ -45,22 +46,31 @@ async def test_transaction(db):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
-async def test_executes(db):
+async def test_executes(db: Aerie) -> None:
     await db.query(text('select 1')).execute()
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
-async def test_count(db):
+async def test_count(db: Aerie) -> None:
     stmt = select(users).where(users.c.id == 1)
     assert await db.query(stmt).count() == 1
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
-async def test_exists(db):
+async def test_exists(db: Aerie) -> None:
     stmt = select(users).where(users.c.id == 1)
     assert await db.query(stmt).exists() is True
 
     stmt = select(users).where(users.c.id == -1)
     assert await db.query(stmt).exists() is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('db', databases)
+async def test_first(db: Aerie) -> None:
+    stmt = select(users).where(users.c.id == 1)
+    user = await db.query(stmt).first()
+    assert user
+    assert user.id == 1

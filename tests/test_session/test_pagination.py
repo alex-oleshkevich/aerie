@@ -1,5 +1,6 @@
 import pytest
 
+from aerie import Aerie
 from aerie.session import Page
 from tests.conftest import User, databases
 
@@ -35,7 +36,7 @@ def test_page_iterator() -> None:
 
 
 def test_page_no_other_pages() -> None:
-    page = Page([], total_rows=2, page=1, page_size=2)
+    page: Page = Page([], total_rows=2, page=1, page_size=2)
     assert not page.has_other
 
 
@@ -57,7 +58,7 @@ def test_page_next_prev_pages() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
-async def test_paginate(db) -> None:
+async def test_paginate(db: Aerie) -> None:
     async with db.session() as session:
         stmt = session.select(User)
         page = await session.query(stmt).paginate(2, 1)
