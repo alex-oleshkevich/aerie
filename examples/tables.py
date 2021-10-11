@@ -16,7 +16,7 @@ users = sa.Table(
 )
 
 
-async def main():
+async def main() -> None:
     db = Aerie(DATABASE_URL)
 
     # create tables
@@ -25,14 +25,15 @@ async def main():
 
     # create some users
     async with db.transaction() as tx:
-        stmt = insert(users).values(
-            [
-                {'id': 1, 'name': 'One'},
-                {'id': 2, 'name': 'Two'},
-                {'id': 3, 'name': 'Three'},
-            ]
+        await tx.execute(
+            insert(users).values(
+                [
+                    {'id': 1, 'name': 'One'},
+                    {'id': 2, 'name': 'Two'},
+                    {'id': 3, 'name': 'Three'},
+                ]
+            )
         )
-        await tx.execute(stmt)
 
         stmt = select(users).where(users.c.id == 2)
         result = await tx.execute(stmt)

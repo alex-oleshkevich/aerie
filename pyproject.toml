@@ -55,6 +55,7 @@ build-backend = "poetry.core.masonry.api"
 target-version = ["py36"]
 skip-string-normalization = true
 line_length = 120
+exclude = ".venv"
 
 [tool.isort]
 combine_as_imports = true
@@ -82,7 +83,7 @@ exclude_lines = [
 [tool.mypy]
 disallow_untyped_defs = true
 ignore_missing_imports = true
-exclude = "^tests/"
+plugins = ["sqlalchemy.ext.mypy.plugin"]
 
 [tool.pytest.ini_options]
 python_files = ["tests.py", "test_*.py", "*_tests.py"]

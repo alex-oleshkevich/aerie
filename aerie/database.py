@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 import typing as t
-from sqlalchemy import MetaData, text
+from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import Executable
@@ -10,10 +10,6 @@ from aerie.query import ExecutableQuery
 from aerie.session import DbSession
 
 _IsolationLevel = t.Literal['SERIALIZABLE', 'REPEATABLE READ', 'READ COMMITTED', 'READ UNCOMMITTED', 'AUTOCOMMIT']
-
-
-def _to_executable(stmt: t.Union[str, Executable]) -> Executable:
-    return text(stmt) if isinstance(stmt, str) else stmt
 
 
 class Aerie:
@@ -40,7 +36,7 @@ class Aerie:
         )
         self._session_maker = sessionmaker(bind=self._engine, class_=DbSession, expire_on_commit=False)
 
-    def session(self) -> DbSession:
+    def session(self) -> t.AsyncContextManager[DbSession]:
         """Create a new session object."""
         return self._session_maker()
 

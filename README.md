@@ -36,7 +36,6 @@ For SQLite use "sqlite" extra. To install all drivers use "full" extra.
 ## TODO
 
 * simplify column definition: `sa.Column(sa.Integer)` -> `models.IntergerField()`
-* enhance `DbSession` with executable API: `await session.query(User).where(User.id == 1).one_or_none()`
 * integrate with Alembic CLI
 * multiple metadata objects support (for multiple distinct databases)
 
@@ -139,7 +138,7 @@ async with db.session() as session:
 
     # get first user in the row set
     stmt = session.select(User)
-    user = await session.first(stmt)
+    user = await session.query(stmt).first()
 ```
 
 > Make sure the module with models is imported before you create tables.
@@ -155,7 +154,7 @@ call `DbSession.paginate` method.
 ```python
 async with db.session() as session:
     stmt = session.select(User)
-    page = await session.paginate(stmt, page=1, page_size=10)
+    page = await session.query(stmt).paginate(page=1, page_size=10)
 
     for user in page:
         print(user)
@@ -172,6 +171,7 @@ The page object has more helper attributes:
 | total_pages   | int  | Total pages in the row set.                                                                              |
 | has_next      | bool | Test if the next page is available.                                                                      |
 | has_previous  | bool | Test if the previous page is available.                                                                  |
+| has_other     | bool | Test if there are another pages except current one.                                                      |
 | next_page     | int  | Next page number. Always returns an integer. If there is no more pages the current page number returned. |
 | previous_page | int  | Previous page number. Always returns an integer. If there is no previous page, the number 1 returned.    |
 | start_index   | int  | The 1-based index of the first item on this page.                                                        |
