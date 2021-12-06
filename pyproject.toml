@@ -24,13 +24,13 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.8.0"
+python = "^3.9.0"
 aiosqlite = { version = "^0.17.0", optional = true }
-asyncpg = { version = "^0.24.0", optional = true }
-SQLAlchemy = {extras = ["asyncio"], version = "^1.4.23"}
+asyncpg = { version = "^0.25.0", optional = true }
+SQLAlchemy = {extras = ["asyncio"], version = "^1.4.27"}
 
 [tool.poetry.dev-dependencies]
-sqlalchemy2-stubs = "^0.0.2-alpha.15"
+sqlalchemy2-stubs = "^0.0.2a19"
 pytest = "^6.2.4"
 pytest-asyncio = "^0.15.1"
 requests = "^2.25.1"
@@ -40,7 +40,7 @@ mypy = "^0.910"
 flake8 = "^3.9.2"
 pytest-sugar = "^0.9.4"
 aiosqlite = "^0.17.0"
-asyncpg = "^0.24.0"
+asyncpg = "^0.25.0"
 
 [tool.poetry.extras]
 sqlite = ["aiosqlite"]
@@ -83,6 +83,9 @@ exclude_lines = [
 [tool.mypy]
 disallow_untyped_defs = true
 ignore_missing_imports = true
+files = ["aerie", "tests"]
+exclude = "/*venv/"
+pretty = true
 plugins = ["sqlalchemy.ext.mypy.plugin"]
 
 [tool.pytest.ini_options]

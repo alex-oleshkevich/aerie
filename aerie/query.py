@@ -4,6 +4,7 @@ from sqlalchemy.engine import Result, Row
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.sql import Executable
 
+from aerie.collections import Collection
 from aerie.utils import convert_exceptions
 
 R = t.TypeVar('R')
@@ -20,10 +21,10 @@ class ExecutableQuery:
             result = await connection.execute(self._stmt, self._params)
             return result.first()
 
-    async def all(self) -> t.List[Row]:
+    async def all(self) -> Collection[Row]:
         async with self._engine.begin() as connection:
             result = await connection.execute(self._stmt, self._params)
-            return result.all()
+            return Collection(result.all())
 
     async def one(self) -> Row:
         with convert_exceptions():
