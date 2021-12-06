@@ -15,7 +15,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                python-version: [ '3.8', '3.9', '3.10.0-rc.1' ]
+                python-version: [ '3.9', '3.10' ]
         services:
             postgres:
                 image: postgres:13
@@ -49,15 +49,15 @@ jobs:
 
             -   name: Lint with flake8
                 run: |
-                    flake8 aerie tests
+                    flake8 aerie/ tests/ examples/
 
             -   name: Lint with mypy
                 run: |
-                    mypy aerie/
+                    mypy --config-file pyproject.toml
 
             -   name: Lint with black
                 run: |
-                    black --check aerie tests
+                    black --config=pyproject.toml --check aerie/ tests/ examples/
 
             -   name: Test with pytest
                 run: |
