@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 from sqlalchemy.sql.functions import func
 
+from aerie.collections import Collection
 from aerie.exceptions import TooManyResultsError
 from aerie.utils import convert_exceptions
 
@@ -101,9 +102,9 @@ class ExecutableQuery:
         self._stmt = stmt
         self._params = params
 
-    async def all(self) -> t.Sequence:
+    async def all(self) -> Collection:
         result = await self._session.execute(self._stmt, self._params)
-        return result.scalars().all()
+        return Collection(result.scalars().all())
 
     async def first(self) -> t.Optional[M]:
         result = await self._session.execute(self._stmt, self._params)
@@ -144,7 +145,7 @@ class ExecutableQuery:
 
         stmt = self._stmt.limit(page_size).offset(offset)
         rows = await self._session.query(stmt, self._params).all()
-        return Page(rows, total, page, page_size)
+        return Page(list(rows), total, page, page_size)
 
 
 class DbSession(AsyncSession):
