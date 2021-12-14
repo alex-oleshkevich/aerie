@@ -81,7 +81,7 @@ exclude_lines = [
 [tool.mypy]
 disallow_untyped_defs = true
 ignore_missing_imports = true
-files = ["aerie", "tests"]
+files = ["aerie", "tests", "examples"]
 exclude = "/*venv/"
 pretty = true
 plugins = ["sqlalchemy.ext.mypy.plugin"]
