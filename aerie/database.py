@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing as t
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
@@ -13,6 +15,8 @@ _IsolationLevel = t.Literal['SERIALIZABLE', 'REPEATABLE READ', 'READ COMMITTED',
 
 
 class Aerie:
+    instance: t.Optional[Aerie] = None
+
     def __init__(
         self,
         url: str,
@@ -25,6 +29,8 @@ class Aerie:
         session_kwargs: t.Dict[str, t.Any] = None,
         **engine_kwargs: t.Any,
     ) -> None:
+        Aerie.instance = self
+
         self.url = url
         self.metadata: MetaData = metadata or shared_metadata
         self.engine: AsyncEngine = create_async_engine(
