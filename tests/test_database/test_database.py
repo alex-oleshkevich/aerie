@@ -20,7 +20,7 @@ def test_returns_session(db: Aerie) -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
 async def test_creates_tables(db: Aerie) -> None:
-    await db.create_tables()
+    await db.schema.create_tables()
     async with db.session() as session:
         await session.execute(text('select * from sample'))
         assert True  # DatabaseError has not been raised -> table exists
@@ -29,8 +29,8 @@ async def test_creates_tables(db: Aerie) -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
 async def test_drops_tables(db: Aerie) -> None:
-    await db.create_tables(['sample'])
-    await db.drop_tables(['sample'])
+    await db.schema.create_tables(['sample'])
+    await db.schema.drop_tables(['sample'])
     async with db.session() as session:
         with pytest.raises(DatabaseError):
             await session.execute(text('select * from sample'))

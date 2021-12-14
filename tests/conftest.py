@@ -38,8 +38,8 @@ def event_loop() -> asyncio.AbstractEventLoop:
 @pytest.mark.asyncio
 async def create_tables() -> t.AsyncGenerator[None, None]:
     for db in databases:
-        await db.drop_tables()
-        await db.create_tables()
+        await db.schema.drop_tables()
+        await db.schema.create_tables()
         await db.query(
             users.insert(
                 [
@@ -51,4 +51,4 @@ async def create_tables() -> t.AsyncGenerator[None, None]:
         ).execute()
     yield
     for db in databases:
-        await db.drop_tables()
+        await db.schema.drop_tables()
