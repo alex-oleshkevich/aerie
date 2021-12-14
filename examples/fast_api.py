@@ -38,7 +38,7 @@ async def db_session() -> t.AsyncGenerator[DbSession, None]:
         yield session
 
 
-app = FastAPI(on_startup=[db.create_tables], on_shutdown=[db.drop_tables])
+app = FastAPI(on_startup=[db.schema.create_tables], on_shutdown=[db.schema.drop_tables])
 
 
 @app.get("/create")

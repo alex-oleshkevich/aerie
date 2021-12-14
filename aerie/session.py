@@ -149,8 +149,14 @@ class ExecutableQuery:
 
 
 class DbSession(AsyncSession):
+    query_class: t.Type[ExecutableQuery] = ExecutableQuery
+
     def select(self, model: t.Type[M]) -> Select:
         return select(model)
 
     def query(self, stmt: Select, params: t.Mapping = None) -> ExecutableQuery:
-        return ExecutableQuery(self, stmt, params)
+        query_class = self.get_query_class()
+        return query_class(self, stmt, params)
+
+    def get_query_class(self) -> t.Type[ExecutableQuery]:
+        return self.query_class

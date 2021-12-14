@@ -20,8 +20,8 @@ async def main() -> None:
     db = Aerie(DATABASE_URL)
 
     # create tables
-    await db.drop_tables()
-    await db.create_tables()
+    await db.schema.drop_tables()
+    await db.schema.create_tables()
 
     # create some users
     async with db.transaction() as tx:
