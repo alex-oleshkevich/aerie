@@ -37,7 +37,6 @@ For SQLite use "sqlite" extra. To install all drivers use "full" extra.
 
 * simplify column definition: `sa.Column(sa.Integer)` -> `models.IntergerField()`
 * integrate with Alembic CLI
-* multiple metadata objects support (for multiple distinct databases)
 
 ## Quick start
 
@@ -100,7 +99,7 @@ users = sa.Table(
 )
 
 # create tables
-await db.create_tables()
+await db.schema.create_tables()
 
 stmt = select(users).where(users.c.id == 2)
 rows = await db.query(stmt).all()
@@ -126,7 +125,7 @@ class User(Model):
 
 
 # create tables
-await db.create_tables()
+await db.schema.create_tables()
 
 async with db.session() as session:
     session.add_all([
@@ -190,12 +189,26 @@ Note, you need to use `aerie.metadata` when you configure `target_metadata` opti
 
 from aerie import metadata
 
-...
-
 target_metadata = metadata
-
-...
 ```
 
 Also, don't forget to import all your models in Alembic's `env.py` file so their structure is fully loaded and no models
 forgotten.
+
+## Shared instances
+
+You can configure Aerie to populate Aerie.instances class-level variable, so you can access database instances from
+anywhere of your code. For that, just pass `name` argument to Aerie constructor.
+
+```python
+# migrations/env.py
+
+from aerie import Aerie
+
+db = Aerie(name='shared', ...)
+
+# other file
+db = Aerie.get_instance('shared')
+```
+
+> Note, instances without name cannot be shared.

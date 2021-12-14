@@ -12,7 +12,7 @@ DATABASE_URLS = [
     os.environ.get('POSTGRES_URL', 'postgresql+asyncpg://postgres:postgres@localhost/aerie'),
 ]
 
-databases = [Aerie(url, name=url) for url in DATABASE_URLS]
+databases = [Aerie(url) for url in DATABASE_URLS]
 
 metadata = sa.MetaData()
 users = sa.Table(

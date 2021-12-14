@@ -25,14 +25,15 @@ class Aerie:
         json_serializer: t.Callable = None,
         json_deserializer: t.Callable = None,
         metadata: MetaData = None,
-        name: str = 'default',
+        name: str = None,
         session_class: t.Type[DbSession] = DbSession,
         session_kwargs: t.Dict[str, t.Any] = None,
         **engine_kwargs: t.Any,
     ) -> None:
-        if name in Aerie.instances:
-            raise KeyError(f'Aerie instance with name "{name}" already exists. Use another name for this instance.')
-        Aerie.instances[name] = self
+        if name is not None:
+            if name in Aerie.instances:
+                raise KeyError(f'Aerie instance with name "{name}" already exists. Use another name for this instance.')
+            Aerie.instances[name] = self
 
         self.url = url
         self.metadata: MetaData = metadata or shared_metadata
@@ -61,7 +62,8 @@ class Aerie:
     def query(self, stmt: Executable, params: t.Mapping = None) -> ExecutableQuery:
         return ExecutableQuery(self.engine, stmt, params)
 
-    def get_instance(self, name: str = 'default') -> Aerie:
+    @classmethod
+    def get_instance(cls, name: str = 'default') -> Aerie:
         if name not in Aerie.instances:
             raise KeyError(f'Aerie instance "{name}" does not exists.')
         return Aerie.instances[name]

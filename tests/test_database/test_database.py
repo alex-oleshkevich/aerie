@@ -74,3 +74,11 @@ async def test_first(db: Aerie) -> None:
     user = await db.query(stmt).first()
     assert user
     assert user.id == 1
+
+
+def test_shares_instances() -> None:
+    db = Aerie('sqlite+aiosqlite:///:memory:', name='instance1')
+    db2 = Aerie('sqlite+aiosqlite:///:memory:', name='instance2')
+
+    assert Aerie.get_instance('instance1') == db
+    assert Aerie.get_instance('instance2') == db2
