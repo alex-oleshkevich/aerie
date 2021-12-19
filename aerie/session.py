@@ -5,10 +5,10 @@ import typing as t
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from aerie.exceptions import NoActiveSessionError
-from aerie.models import Model
+from aerie.models import BaseModel
 from aerie.queries import SelectQuery
 
-M = t.TypeVar('M', bound=Model)
+M = t.TypeVar('M', bound=BaseModel)
 
 
 class DbSession(AsyncSession):
@@ -17,16 +17,6 @@ class DbSession(AsyncSession):
 
     def query(self, model: t.Type[M]) -> SelectQuery[M]:
         return SelectQuery(model, self)
-
-    def add(self, *objects: M) -> None:
-        """Add objects to session."""
-        if len(objects) > 1:
-            self.add_all(objects)
-        else:
-            super().add(objects[0])
-
-    def add_all(self, objects: t.Iterable[M]) -> None:
-        super().add_all(objects)
 
     @classmethod
     def get_current_session(cls) -> DbSession:

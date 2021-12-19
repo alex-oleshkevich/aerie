@@ -1,16 +1,17 @@
+from .base import metadata
 from .database import Aerie
 from .exceptions import AerieError, NoResultsError, TooManyResultsError
-from .models import Model, metadata
+from .models import BaseModel
 from .paginator import Page
 from .session import DbSession
 
 __all__ = [
     'Aerie',
     'DbSession',
-    'Model',
-    'metadata',
+    'BaseModel',
     'TooManyResultsError',
     'NoResultsError',
     'AerieError',
     'Page',
+    'metadata',
 ]

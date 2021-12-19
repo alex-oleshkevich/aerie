@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import Executable
 
-from aerie.models import metadata as shared_metadata
+from aerie.base import metadata as shared_metadata
 from aerie.results import ResultProxy
 from aerie.schema import Schema
 from aerie.session import DbSession
@@ -58,8 +58,8 @@ class Aerie:
             **session_kwargs,
         )
 
-    def session(self) -> t.AsyncContextManager[DbSession]:
-        return self._session_maker()
+    def session(self, **options: t.Any) -> t.AsyncContextManager[DbSession]:
+        return self._session_maker(**options)
 
     def transaction(self) -> AsyncEngine._trans_ctx:
         """Establish a new transaction."""

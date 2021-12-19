@@ -6,15 +6,6 @@ from tests.tables import User
 
 
 @pytest.mark.asyncio
-async def test_adds_multiple_objects(db: Aerie) -> None:
-    async with db.session() as session:
-        user = User()
-        user2 = User()
-        session.add(user, user2)
-    await session.commit()
-
-
-@pytest.mark.asyncio
 async def test_session_maintains_stack(db: Aerie) -> None:
     async with db.session() as session:
         assert len(DbSession.current_session_stack.get()) == 1

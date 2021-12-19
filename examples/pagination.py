@@ -2,14 +2,14 @@ import asyncio
 import os
 import sqlalchemy as sa
 
-from aerie import Aerie, Model
+from aerie import Aerie, BaseModel
 
 PAGE = int(os.environ.get('PAGE', 1))
 PAGE_SIZE = int(os.environ.get('PAGE_SIZE', 20))
 DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite+aiosqlite:///:memory:')
 
 
-class User(Model):
+class User(BaseModel):
     __tablename__ = 'users'
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String)

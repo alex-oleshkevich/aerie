@@ -1,9 +1,5 @@
-from sqlalchemy import MetaData
-from sqlalchemy.ext.declarative import declarative_base
-
-metadata = MetaData()
-Base = declarative_base(metadata=metadata)
+from aerie.base import Base
 
 
-class Model(Base):
+class BaseModel(Base):
     __abstract__ = True

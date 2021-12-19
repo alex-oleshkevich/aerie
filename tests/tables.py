@@ -2,7 +2,8 @@ import sqlalchemy as sa
 import typing as t
 from sqlalchemy.orm import Mapped, relationship
 
-from aerie import Model
+from aerie.behaviors import Queryable
+from aerie.models import BaseModel
 
 metadata = sa.MetaData()
 users_table = sa.Table(
@@ -33,6 +34,10 @@ user_to_address = sa.Table(
     sa.Column('address_id', sa.ForeignKey(address_table.c.id), primary_key=True),
 )
 sample_table = sa.Table('sample', metadata, sa.Column(sa.Integer, name='id'))
+
+
+class Model(Queryable, BaseModel):
+    __abstract__ = True
 
 
 class User(Model):
