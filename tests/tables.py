@@ -2,8 +2,8 @@ import sqlalchemy as sa
 import typing as t
 from sqlalchemy.orm import Mapped, relationship
 
+from aerie import Base
 from aerie.behaviors import Queryable
-from aerie.models import BaseModel
 
 metadata = sa.MetaData()
 users_table = sa.Table(
@@ -36,7 +36,7 @@ user_to_address = sa.Table(
 sample_table = sa.Table('sample', metadata, sa.Column(sa.Integer, name='id'))
 
 
-class Model(Queryable, BaseModel):
+class Model(Queryable, Base):
     __abstract__ = True
 
 

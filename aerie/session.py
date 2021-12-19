@@ -4,11 +4,11 @@ import contextvars as cv
 import typing as t
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from aerie.base import Base
 from aerie.exceptions import NoActiveSessionError
-from aerie.models import BaseModel
 from aerie.queries import SelectQuery
 
-M = t.TypeVar('M', bound=BaseModel)
+M = t.TypeVar('M', bound=Base)
 
 
 class DbSession(AsyncSession):
@@ -39,3 +39,8 @@ class DbSession(AsyncSession):
     async def __aenter__(self) -> DbSession:
         DbSession.current_session_stack.get().append(self)
         return self
+
+
+def get_current_session() -> DbSession:
+    """Return an instance of DbSession that is bound to current task."""
+    return DbSession.get_current_session()

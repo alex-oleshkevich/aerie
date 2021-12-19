@@ -16,14 +16,14 @@ import sqlalchemy as sa
 import typing as t
 from fastapi import Depends, FastAPI
 
-from aerie import Aerie, BaseModel, DbSession
+from aerie import Aerie, Base, DbSession
 
 DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite+aiosqlite:///:memory:')
 
 db = Aerie(DATABASE_URL)
 
 
-class User(BaseModel):
+class User(Base):
     __tablename__ = 'users'
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String)

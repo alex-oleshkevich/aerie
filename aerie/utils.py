@@ -10,9 +10,9 @@ def convert_exceptions() -> t.Generator[None, None, None]:
     try:
         yield
     except MultipleResultsFound as exc:
-        raise TooManyResultsError from exc
-    except NoResultFound as exc:
-        raise NoResultsError from exc
+        raise TooManyResultsError() from exc
+    except NoResultFound:
+        raise NoResultsError('No rows found when one was required.')
 
 
 ITEM = t.TypeVar('ITEM')

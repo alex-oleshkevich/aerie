@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy import select
 
 from aerie import Aerie, DbSession
 from aerie.exceptions import NoActiveSessionError
@@ -19,3 +20,11 @@ async def test_session_maintains_stack(db: Aerie) -> None:
 
     with pytest.raises(NoActiveSessionError):
         assert DbSession.get_current_session() is None
+
+
+@pytest.mark.asyncio
+async def test_session_executes_selects(db: Aerie) -> None:
+    async with db.session() as session:
+        stmt = select(User).where(User.id == 1)
+        result = await session.execute(stmt)
+        assert result.scalars().one().name == 'User One'

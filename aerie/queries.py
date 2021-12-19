@@ -11,13 +11,13 @@ from sqlalchemy.sql import Select
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.sqltypes import NullType
 
+from aerie.base import Base
 from aerie.collections import Collection
-from aerie.models import BaseModel
 from aerie.paginator import Page
 from aerie.utils import colorize, convert_exceptions
 
-M = t.TypeVar('M', bound=BaseModel)
-E = t.TypeVar('E', bound=BaseModel)
+M = t.TypeVar('M', bound=Base)
+E = t.TypeVar('E', bound=Base)
 
 
 class SelectQuery(t.Generic[M]):
@@ -28,7 +28,7 @@ class SelectQuery(t.Generic[M]):
         base_stmt: Select = None,
         returns_model: bool = None,
     ) -> None:
-        self._model: t.Type[BaseModel] = model
+        self._model: t.Type[Base] = model
         self._executor = executor
         self._stmt: Select = select(model) if base_stmt is None else base_stmt
         self._is_session = isinstance(executor, AsyncSession)
