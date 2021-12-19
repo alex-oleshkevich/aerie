@@ -18,6 +18,16 @@ async def test_all(db: Aerie) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
+async def test_query_evaluates_to_all(db: Aerie) -> None:
+    async with db.session() as session:
+        async with session:
+            users = await session.query(User)
+            assert len(users) == 3
+            assert isinstance(users[0], User)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('db', databases)
 async def test_first(db: Aerie) -> None:
     async with db.session() as session:
         async with session:

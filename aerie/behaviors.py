@@ -2,6 +2,7 @@ import sqlalchemy as sa
 import typing as t
 
 from aerie.base import Base
+from aerie.collections import Collection
 from aerie.queries import SelectQuery
 from aerie.session import get_current_session
 
@@ -24,6 +25,10 @@ class Queryable(Base):
     @classmethod
     def query(cls: t.Type[C]) -> SelectQuery[C]:
         return get_current_session().query(cls)
+
+    @classmethod
+    async def all(cls: t.Type[C]) -> Collection[C]:
+        return await get_current_session().query(cls).all()
 
     @classmethod
     async def get(cls: t.Type[C], pk: t.Any, pk_column: str = 'id') -> C:

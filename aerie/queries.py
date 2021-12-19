@@ -175,5 +175,8 @@ class SelectQuery(t.Generic[M]):
             returns_model=returns_model,
         )
 
+    def __await__(self) -> t.Generator[t.Any, None, Collection[M]]:
+        return self.all().__await__()
+
     def __str__(self) -> str:
         return self.to_string()

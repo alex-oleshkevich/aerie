@@ -5,6 +5,13 @@ from tests.tables import User
 
 
 @pytest.mark.asyncio
+async def test_model_all(db: Aerie) -> None:
+    async with db.session():
+        users = await User.all()
+        assert len(users) == 3
+
+
+@pytest.mark.asyncio
 async def test_model_creates_query(db: Aerie) -> None:
     async with db.session():
         user = await User.query().first()
