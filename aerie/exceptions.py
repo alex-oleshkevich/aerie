@@ -11,3 +11,7 @@ class TooManyResultsError(AerieError, exc.MultipleResultsFound):  # pragma: no c
 
 class NoResultsError(AerieError, exc.NoResultFound):  # pragma: no cover
     """Raised when .one() matches no rows."""
+
+
+class NoActiveSessionError(AerieError):  # pragma: no cover
+    """Raised when not global session exists."""
