@@ -113,11 +113,11 @@ Another option to low-level query builder are ORM models. Aerie provides `aerie.
 create your model.
 
 ```python
-from aerie import Model
+from aerie import Base
 import sqlalchemy as sa
 
 
-class User(Model):
+class User(Base):
     __tablename__ = 'users'
 
     id = sa.Column(sa.Integer, primary_key=True)
@@ -136,8 +136,7 @@ async with db.session() as session:
     await session.flush()
 
     # get first user in the row set
-    stmt = session.select(User)
-    user = await session.query(stmt).first()
+    user = await session.query(User).first()
 ```
 
 > Make sure the module with models is imported before you create tables.
@@ -152,8 +151,7 @@ call `DbSession.paginate` method.
 
 ```python
 async with db.session() as session:
-    stmt = session.select(User)
-    page = await session.query(stmt).paginate(page=1, page_size=10)
+    page = await session.query(User).paginate(page=1, page_size=10)
 
     for user in page:
         print(user)
