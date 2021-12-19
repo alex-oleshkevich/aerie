@@ -1,17 +1,22 @@
 from __future__ import annotations
 
 import typing as t
-from sqlalchemy import MetaData
+
+from sqlalchemy import MetaData, Table
+from sqlalchemy.engine import Row
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.sql import Executable
+from sqlalchemy.sql import Executable, Selectable
 
-from aerie.models import metadata as shared_metadata
-from aerie.query import ExecutableQuery
+from aerie.models import metadata as shared_metadata, Model
+from aerie.queries import SelectQuery
+from aerie.results import ResultProxy
 from aerie.schema import Schema
 from aerie.session import DbSession
 
 _IsolationLevel = t.Literal['SERIALIZABLE', 'REPEATABLE READ', 'READ COMMITTED', 'READ UNCOMMITTED', 'AUTOCOMMIT']
+
+E = t.TypeVar('E', bound=Row)
 
 
 class Aerie:
@@ -48,19 +53,23 @@ class Aerie:
         self.schema = Schema(self.engine, self.metadata)
 
         session_kwargs = session_kwargs or {}
-        self.session: sessionmaker = sessionmaker(
+        self._session_maker: sessionmaker = sessionmaker(
             bind=self.engine,
             class_=session_class,
             expire_on_commit=False,
             **session_kwargs,
         )
 
+    def session(self) -> t.AsyncContextManager[DbSession]:
+        return self._session_maker()
+
     def transaction(self) -> AsyncEngine._trans_ctx:
         """Establish a new transaction."""
         return self.engine.begin()
 
-    def query(self, stmt: Executable, params: t.Mapping = None) -> ExecutableQuery:
-        return ExecutableQuery(self.engine, stmt, params)
+    def execute(self, stmt: t.Union[str, Executable], params: t.Mapping = None) -> ResultProxy[Row]:
+        """Execute an executable or raw SQL query."""
+        return ResultProxy(self.engine, stmt, params)
 
     @classmethod
     def get_instance(cls, name: str = 'default') -> Aerie:

@@ -35,8 +35,7 @@ async def main() -> None:
         await session.flush()
 
         # get first user
-        stmt = session.select(User)
-        user = await session.query(stmt).first()
+        user = await session.query(User).first()
         print('First user: %s' % user)
 
         # get user by PK
@@ -44,13 +43,11 @@ async def main() -> None:
         print('User by PK: %s' % user)
 
         # user by condition
-        stmt = session.select(User).where(User.name == 'One')
-        user = await session.query(stmt).one()
+        user = await session.query(User).where(User.name == 'One').one()
         print('User by where clause: %s' % user)
 
         # all users
-        stmt = session.select(User)
-        users = await session.query(stmt).all()
+        users = await session.query(User).all()
         print('All users: %s' % [str(u) for u in users])
 
 

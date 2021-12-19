@@ -1,32 +1,18 @@
 import asyncio
 import os
-import pytest
-import sqlalchemy as sa
 import typing as t
 
+import pytest
+
 from aerie import Aerie
-from aerie.models import Model
+from tests.tables import address_table, metadata, profile_table, user_to_address, users_table
 
 DATABASE_URLS = [
     'sqlite+aiosqlite:///:memory:',
     os.environ.get('POSTGRES_URL', 'postgresql+asyncpg://postgres:postgres@localhost/aerie'),
 ]
 
-databases = [Aerie(url) for url in DATABASE_URLS]
-
-metadata = sa.MetaData()
-users = sa.Table(
-    'users',
-    metadata,
-    sa.Column(sa.Integer, name='id', primary_key=True),
-    sa.Column(sa.String, name='name', nullable=True),
-)
-
-
-class User(Model):
-    __tablename__ = 'users'
-    id = sa.Column(sa.BigInteger, primary_key=True)
-    name = sa.Column(sa.String)
+databases = [Aerie(url, metadata=metadata) for url in DATABASE_URLS]
 
 
 @pytest.fixture(scope='session')
@@ -40,15 +26,31 @@ async def create_tables() -> t.AsyncGenerator[None, None]:
     for db in databases:
         await db.schema.drop_tables()
         await db.schema.create_tables()
-        await db.query(
-            users.insert(
-                [
-                    {'id': 1, 'name': 'User One'},
-                    {'id': 2, 'name': 'User Two'},
-                    {'id': 3, 'name': 'User Three'},
-                ]
-            )
-        ).execute()
+        await db.execute(
+            users_table.insert([
+                {'id': 1, 'name': 'User One'},
+                {'id': 2, 'name': 'User Two'},
+                {'id': 3, 'name': 'User Three'},
+            ])
+        )
+        await db.execute(
+            profile_table.insert([
+                {'id': 1, 'first_name': 'User', 'last_name': 'One', 'user_id': 1},
+                {'id': 2, 'first_name': 'User', 'last_name': 'Two', 'user_id': 2},
+            ])
+        )
+        await db.execute(
+            address_table.insert([
+                {'id': 1, 'city': 'Minsk', 'street': 'Skaryny pr.'},
+                {'id': 2, 'city': 'Stoubcy', 'street': 'Central str.'},
+            ])
+        )
+        await db.execute(
+            user_to_address.insert([
+                {'user_id': 1, 'address_id': 1},
+                {'user_id': 2, 'address_id': 2},
+            ])
+        )
     yield
-    for db in databases:
-        await db.schema.drop_tables()
+    # for db in databases:
+    #     await db.schema.drop_tables()

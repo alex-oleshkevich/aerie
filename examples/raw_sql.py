@@ -39,7 +39,7 @@ async def main() -> None:
         print('User with ID 2 has name: %s' % user_id2.name)
 
     # you can read db w/o transaction
-    user_id3 = await db.query(text('select * from users where id = :user_id'), {'user_id': 3}).one()
+    user_id3 = await db.execute('select * from users where id = :user_id', {'user_id': 3}).one()
     print('User with ID 3 has name: %s' % user_id3.name)
 
 

@@ -1,8 +1,8 @@
 import pytest
 
-from aerie import Aerie
-from aerie.session import Page
-from tests.conftest import User, databases
+from aerie import Aerie, Page
+from tests.conftest import databases
+from tests.tables import User, users_table
 
 
 def test_page() -> None:
@@ -59,9 +59,17 @@ def test_page_next_prev_pages() -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
 async def test_paginate(db: Aerie) -> None:
+    page = await db.query(users_table).paginate(2, 1)
+    assert page.total_rows == 3
+    assert len(page) == 1
+    assert next(page).id == 2
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('db', databases)
+async def test_paginate_session(db: Aerie) -> None:
     async with db.session() as session:
-        stmt = session.select(User)
-        page = await session.query(stmt).paginate(2, 1)
+        page = await session.query(User).paginate(2, 1)
         assert page.total_rows == 3
         assert len(page) == 1
         assert next(page).id == 2

@@ -1,7 +1,7 @@
 import pytest
 from typing import Any
 
-from aerie.collections import Collection
+from aerie.collections import Collection, EmptyError
 
 
 def test_first() -> None:
@@ -58,7 +58,7 @@ def test_pluck_on_classes() -> None:
 
 
 def test_avg_raises_if_empty() -> None:
-    with pytest.raises(ArithmeticError) as ex:
+    with pytest.raises(ValueError) as ex:
         collection = Collection[int]([])
         collection.avg()
     assert str(ex.value) == "Cannot find avg value: collection is empty."
@@ -84,7 +84,7 @@ def test_avg_by_key_over_classes() -> None:
 
 
 def test_min_raises_if_empty() -> None:
-    with pytest.raises(ArithmeticError) as ex:
+    with pytest.raises(EmptyError) as ex:
         collection = Collection[int]([])
         collection.min()
     assert str(ex.value) == "Cannot find min value: collection is empty."
@@ -114,7 +114,7 @@ def test_min_by_key_over_classes() -> None:
 
 
 def test_max_raises_if_empty() -> None:
-    with pytest.raises(ArithmeticError) as ex:
+    with pytest.raises(EmptyError) as ex:
         collection = Collection[int]([])
         collection.max()
     assert str(ex.value) == "Cannot find max value: collection is empty."
@@ -144,7 +144,7 @@ def test_max_by_key_over_classes() -> None:
 
 
 def test_sum_raises_if_empty() -> None:
-    with pytest.raises(ArithmeticError) as ex:
+    with pytest.raises(EmptyError) as ex:
         collection = Collection[int]([])
         collection.sum()
     assert str(ex.value) == "Cannot find sum value: collection is empty."
@@ -370,3 +370,25 @@ def test_contains() -> None:
 def test_stringable() -> None:
     collection = Collection([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
     assert str(collection) == "<Collection: [1,2,3,4,5,6,7,8,9,10 and 1 items more]>"
+
+
+def test_choices() -> None:
+    items = [
+        {'item_id': 1, 'item_name': 'one'},
+        {'item_id': 2, 'item_name': 'two'},
+        {'item_id': 3, 'item_name': 'three'},
+    ]
+    assert Collection(items).choices('item_name', 'item_id') == [(1, 'one'), (2, 'two'), (3, 'three')]
+
+
+def test_choices_dict() -> None:
+    items = [
+        {'item_id': 1, 'item_name': 'one'},
+        {'item_id': 2, 'item_name': 'two'},
+        {'item_id': 3, 'item_name': 'three'},
+    ]
+    assert Collection(items).choices_dict('item_name', 'item_id') == [
+        {'value': 1, 'label': 'one'},
+        {'value': 2, 'label': 'two'},
+        {'value': 3, 'label': 'three'},
+    ]

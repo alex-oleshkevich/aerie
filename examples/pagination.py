@@ -30,8 +30,7 @@ async def main() -> None:
         session.add_all([User(id=x + 1, name='User %s' % (x + 1)) for x in range(100)])
         await session.flush()
 
-        stmt = session.select(User)
-        page = await session.query(stmt).paginate(PAGE, PAGE_SIZE)
+        page = await session.query(User).paginate(PAGE, PAGE_SIZE)
 
         print('Current page: %s' % page.page)
         print('Current page size: %s' % page.page_size)

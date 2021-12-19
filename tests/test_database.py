@@ -6,7 +6,8 @@ from sqlalchemy.exc import DatabaseError
 from aerie import Aerie
 from aerie.models import metadata
 from aerie.session import DbSession
-from tests.conftest import databases, users
+from tests.conftest import databases
+from tests.tables import users_table
 
 sample_table = sa.Table('sample', metadata, sa.Column(sa.Integer, name='id'))
 
@@ -47,33 +48,8 @@ async def test_transaction(db: Aerie) -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
 async def test_executes(db: Aerie) -> None:
-    await db.query(text('select 1')).execute()
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize('db', databases)
-async def test_count(db: Aerie) -> None:
-    stmt = select(users).where(users.c.id == 1)
-    assert await db.query(stmt).count() == 1
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize('db', databases)
-async def test_exists(db: Aerie) -> None:
-    stmt = select(users).where(users.c.id == 1)
-    assert await db.query(stmt).exists() is True
-
-    stmt = select(users).where(users.c.id == -1)
-    assert await db.query(stmt).exists() is False
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize('db', databases)
-async def test_first(db: Aerie) -> None:
-    stmt = select(users).where(users.c.id == 1)
-    user = await db.query(stmt).first()
-    assert user
-    assert user.id == 1
+    assert await db.execute(text('select 1')).scalar() == 1
+    assert await db.execute('select 1').scalar() == 1
 
 
 def test_shares_instances() -> None:
@@ -82,3 +58,14 @@ def test_shares_instances() -> None:
 
     assert Aerie.get_instance('instance1') == db
     assert Aerie.get_instance('instance2') == db2
+
+
+def test_shares_instances_requires_unique_names() -> None:
+    with pytest.raises(KeyError, match='Use another name'):
+        Aerie('sqlite+aiosqlite:///:memory:', name='instance1')
+        Aerie('sqlite+aiosqlite:///:memory:', name='instance1')
+
+
+def test_raises_for_missing_instance() -> None:
+    with pytest.raises(KeyError, match='does not exists'):
+        Aerie.get_instance('missing')

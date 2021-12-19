@@ -3,19 +3,23 @@ from __future__ import annotations
 import functools
 import itertools
 import statistics
-from typing import Any, Callable, Dict, Generator, Generic, Iterable, List, Optional, Protocol, TypeVar, Union, overload
+from typing import Any, Callable, Dict, Generator, Generic, Iterable, List, Optional, overload, Protocol, TypeVar, Union
 
 from aerie.utils import chunked
 
 E = TypeVar("E", bound=object)
 
 
-class CastsToString(Protocol):
+class CastsToString(Protocol):  # pragma: nocover
     def __str__(self) -> str:
         ...
 
 
 StrLike = Union[str, CastsToString]
+
+
+class EmptyError(ValueError):
+    pass
 
 
 def attribute_reader(obj: Any, attr: str, default: Any = None) -> Any:
@@ -62,7 +66,7 @@ class Collection(Generic[E], Iterable[E]):
         If `field` is given and items are not mappings/classes
          the exception will be raised."""
         if not len(self):
-            raise ArithmeticError("Cannot find avg value: collection is empty.")
+            raise EmptyError("Cannot find avg value: collection is empty.")
         items = self.pluck(field) if field else self.items
         return statistics.mean(items or [0])
 
@@ -72,7 +76,7 @@ class Collection(Generic[E], Iterable[E]):
         When `field` is given it returns the smallest item by `field` value.
         If collection is empty it will raise ArithmeticError."""
         if not len(self):
-            raise ArithmeticError("Cannot find min value: collection is empty.")
+            raise EmptyError("Cannot find min value: collection is empty.")
         items = self.pluck(field) if field else self.items
         return min(items)
 
@@ -83,7 +87,7 @@ class Collection(Generic[E], Iterable[E]):
         If collection is empty it will raise ArithmeticError."""
         items = self.pluck(field) if field else self.items
         if not len(self):
-            raise ArithmeticError("Cannot find max value: collection is empty.")
+            raise EmptyError("Cannot find max value: collection is empty.")
         return max(items)
 
     def sum(self, field: StrLike = None) -> float:
@@ -92,7 +96,7 @@ class Collection(Generic[E], Iterable[E]):
         If collection is empty it will raise ArithmeticError."""
         items = self.pluck(field) if field else self.items
         if not len(self):
-            raise ArithmeticError("Cannot find sum value: collection is empty.")
+            raise EmptyError("Cannot find sum value: collection is empty.")
         return sum(items)
 
     def map(self, fn: Callable[[E], Any]) -> Collection:
@@ -156,23 +160,25 @@ class Collection(Generic[E], Iterable[E]):
     def as_list(self) -> List[E]:
         return list(self)
 
-    def choices(self, label_col: str = 'name', id_col: str = 'id') -> list[tuple[Any, Any]]:
-        return [(attribute_reader(item, id_col), attribute_reader(item, label_col)) for item in self]
+    def choices(self, label_col: str = 'name', value_col: str = 'id') -> list[tuple[Any, Any]]:
+        return [(attribute_reader(item, value_col), attribute_reader(item, label_col)) for item in self]
 
-    def choices_dict(self, label_col: str = 'name', id_col: str = 'id') -> list[dict[Any, Any]]:
-        return [{'id': attribute_reader(item, id_col), 'label': attribute_reader(item, label_col)} for item in self]
+    def choices_dict(self, label_col: str = 'name', value_col: str = 'id', label_key: str = 'label',
+                     value_key: str = 'value') -> list[dict[Any, Any]]:
+        return [{value_key: attribute_reader(item, value_col), label_key: attribute_reader(item, label_col)} for item in
+                self]
 
     @overload
-    def __getitem__(self, index: slice) -> list[E]:
+    def __getitem__(self, index: slice) -> list[E]:  # pragma: nocover
         ...
 
     @overload
-    def __getitem__(self, index: int) -> E:
+    def __getitem__(self, index: int) -> E:  # pragma: nocover
         ...
 
     def __getitem__(self, index: Union[int, slice]) -> Union[E, list[E]]:
         if isinstance(index, slice):
-            return [item for item in self.items[index.start : index.stop : index.step]]
+            return [item for item in self.items[index.start: index.stop: index.step]]
         return self.items[index]
 
     def __setitem__(self, key: int, value: E) -> None:

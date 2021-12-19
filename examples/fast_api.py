@@ -12,10 +12,10 @@ Access http://localhost:8000 to list all users.
 Access http://localhost:8000/create to create a new user.
 """
 import os
-import sqlalchemy as sa
 import typing as t
+
+import sqlalchemy as sa
 from fastapi import Depends, FastAPI
-from sqlalchemy import select
 
 from aerie import Aerie, DbSession, Model
 
@@ -33,17 +33,12 @@ class User(Model):
         return self.name or 'n/a'
 
 
-async def db_session() -> t.AsyncGenerator[DbSession, None]:
-    async with db.session() as session:
-        yield session
-
-
 app = FastAPI(on_startup=[db.schema.create_tables], on_shutdown=[db.schema.drop_tables])
 
 
 @app.get("/create")
-async def create_user_view(session: DbSession = Depends(db_session)) -> t.Mapping:
-    count = await session.query(select(User)).count()
+async def create_user_view(session: DbSession = Depends(db.session)) -> t.Mapping:
+    count = await session.query(User).count()
     user = User(id=count, name=f'User {count}')
     session.add(user)
     await session.commit()
@@ -52,6 +47,6 @@ async def create_user_view(session: DbSession = Depends(db_session)) -> t.Mappin
 
 
 @app.get("/")
-async def list_users_view(session: DbSession = Depends(db_session)) -> t.List:
-    users = await session.query(select(User)).all()
+async def list_users_view(session: DbSession = Depends(db.session)) -> t.List:
+    users = await session.query(User).all()
     return [u.name for u in users]
