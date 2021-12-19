@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import sys
 import typing as t
-
-from sqlalchemy import Boolean, Column, exists, func, Table
-from sqlalchemy.engine import Result, Row
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy import Boolean, Column, exists, func
+from sqlalchemy.engine import Result
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import InstrumentedAttribute, joinedload, selectinload
-from sqlalchemy.sql import Select, Selectable
+from sqlalchemy.sql import Select
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.sqltypes import NullType
 
@@ -17,16 +16,19 @@ from aerie.models import Model
 from aerie.paginator import Page
 from aerie.utils import colorize, convert_exceptions
 
-M = t.TypeVar('M', Model, Table, Row)
-E = t.TypeVar('E', Model, Table)
+M = t.TypeVar('M', bound=Model)
+E = t.TypeVar('E', bound=Model)
 
 
 class SelectQuery(t.Generic[M]):
     def __init__(
-        self, model: t.Type[M], executor: t.Union[AsyncEngine, AsyncSession], base_stmt: Select = None,
+        self,
+        model: t.Type[M],
+        executor: AsyncSession,
+        base_stmt: Select = None,
         returns_model: bool = None,
     ) -> None:
-        self._model = model
+        self._model: t.Type[Model] = model
         self._executor = executor
         self._stmt: Select = select(model) if base_stmt is None else base_stmt
         self._is_session = isinstance(executor, AsyncSession)
@@ -38,11 +40,11 @@ class SelectQuery(t.Generic[M]):
     def having(self, conditions: ColumnElement[Boolean]) -> SelectQuery[M]:
         return self._clone(base_stmt=self._stmt.having(conditions))
 
-    def join(self, target: t.Union[t.Type[E], Table], *props: t.Any, full: bool = False) -> SelectQuery[M]:
-        return self._clone(base_stmt=self._stmt.join(target, *props, full=full))
+    def join(self, target: t.Type[E], on_clause: t.Any = None, full: bool = False) -> SelectQuery[M]:
+        return self._clone(base_stmt=self._stmt.join(target, onclause=on_clause, full=full))
 
-    def left_join(self, target: t.Union[t.Type[E], Table], on_clause: t.Any = None) -> SelectQuery[M]:
-        return self._clone(base_stmt=self._stmt.outerjoin(target, on_clause))
+    def left_join(self, target: t.Type[E], on_clause: t.Any = None, full: bool = False) -> SelectQuery[M]:
+        return self._clone(base_stmt=self._stmt.outerjoin(target, on_clause, full=full))
 
     def filter_by(self, **kwargs: t.Any) -> SelectQuery[M]:
         return self._clone(base_stmt=self._stmt.filter_by(**kwargs))
@@ -67,9 +69,6 @@ class SelectQuery(t.Generic[M]):
 
     def for_update(self) -> SelectQuery[M]:
         return self._clone(base_stmt=self._stmt.with_for_update(nowait=True))
-
-    def only(self, *cols: Column) -> SelectQuery[Row]:
-        return self._clone(base_stmt=self._stmt.with_only_columns(*cols), returns_model=False)
 
     # def cte(self, name, recursive, nesting) -> SelectQuery:
     #     return self._clone(base_stmt=self._stmt.cte(name, recursive, nesting))
@@ -125,8 +124,7 @@ class SelectQuery(t.Generic[M]):
         return self
 
     def to_string(self) -> str:
-        dialect = self._executor.bind.dialect if self._is_session else self._executor.dialect
-        return str(self._stmt.compile(dialect=dialect, compile_kwargs={"literal_binds": True}))
+        return str(self._stmt.compile(dialect=self._executor.bind.dialect, compile_kwargs={"literal_binds": True}))
 
     async def one(self) -> M:
         with convert_exceptions():
@@ -136,15 +134,15 @@ class SelectQuery(t.Generic[M]):
     async def one_or_none(self) -> t.Optional[M]:
         with convert_exceptions():
             result = await self._execute(self._stmt)
-            return result.scalars().one_or_none() if self._returns_model else result.one_or_none()
+            return result.scalars().one_or_none()
 
     async def first(self) -> t.Optional[M]:
         result = await self._execute(self._stmt.limit(1))
-        return result.scalars().first() if self._returns_model else result.first()
+        return result.scalars().first()
 
     async def all(self) -> Collection[M]:
         result = await self._execute(self._stmt)
-        return Collection(result.scalars().all() if self._returns_model else result.all())
+        return Collection(result.scalars().all())
 
     async def exists(self, params: t.Mapping = None) -> bool:
         stmt = select(exists(self._stmt))
@@ -167,15 +165,11 @@ class SelectQuery(t.Generic[M]):
         return await self._execute(self._stmt)
 
     async def _execute(self, stmt: Select, params: t.Mapping = None) -> Result:
-        if isinstance(self._executor, AsyncSession):
-            return await self._executor.execute(stmt, params)
-
-        async with self._executor.begin() as connection:
-            return await connection.execute(stmt, params)
+        return await self._executor.execute(stmt, params)
 
     def _clone(self, *, base_stmt: Select, returns_model: bool = None) -> SelectQuery:
         return SelectQuery(
-            selectable=self._model,
+            model=self._model,
             executor=self._executor,
             base_stmt=base_stmt,
             returns_model=returns_model,

@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 import itertools
 import statistics
-from typing import Any, Callable, Dict, Generator, Generic, Iterable, List, Optional, overload, Protocol, TypeVar, Union
+from typing import Any, Callable, Dict, Generator, Generic, Iterable, List, Optional, Protocol, TypeVar, Union, overload
 
 from aerie.utils import chunked
 
@@ -163,10 +163,13 @@ class Collection(Generic[E], Iterable[E]):
     def choices(self, label_col: str = 'name', value_col: str = 'id') -> list[tuple[Any, Any]]:
         return [(attribute_reader(item, value_col), attribute_reader(item, label_col)) for item in self]
 
-    def choices_dict(self, label_col: str = 'name', value_col: str = 'id', label_key: str = 'label',
-                     value_key: str = 'value') -> list[dict[Any, Any]]:
-        return [{value_key: attribute_reader(item, value_col), label_key: attribute_reader(item, label_col)} for item in
-                self]
+    def choices_dict(
+        self, label_col: str = 'name', value_col: str = 'id', label_key: str = 'label', value_key: str = 'value'
+    ) -> list[dict[Any, Any]]:
+        return [
+            {value_key: attribute_reader(item, value_col), label_key: attribute_reader(item, label_col)}
+            for item in self
+        ]
 
     @overload
     def __getitem__(self, index: slice) -> list[E]:  # pragma: nocover
@@ -178,7 +181,7 @@ class Collection(Generic[E], Iterable[E]):
 
     def __getitem__(self, index: Union[int, slice]) -> Union[E, list[E]]:
         if isinstance(index, slice):
-            return [item for item in self.items[index.start: index.stop: index.step]]
+            return [item for item in self.items[index.start : index.stop : index.step]]
         return self.items[index]
 
     def __setitem__(self, key: int, value: E) -> None:

@@ -1,15 +1,10 @@
 import pytest
-import sqlalchemy as sa
-from sqlalchemy import select, text
+from sqlalchemy import text
 from sqlalchemy.exc import DatabaseError
 
 from aerie import Aerie
-from aerie.models import metadata
 from aerie.session import DbSession
 from tests.conftest import databases
-from tests.tables import users_table
-
-sample_table = sa.Table('sample', metadata, sa.Column(sa.Integer, name='id'))
 
 
 @pytest.mark.asyncio

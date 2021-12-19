@@ -1,33 +1,38 @@
-import typing as t
 import sqlalchemy as sa
+import typing as t
 from sqlalchemy.orm import Mapped, relationship
 
 from aerie import Model
 
 metadata = sa.MetaData()
 users_table = sa.Table(
-    'users', metadata,
+    'users',
+    metadata,
     sa.Column('id', sa.Integer, primary_key=True),
     sa.Column('name', sa.String, nullable=True),
 )
 profile_table = sa.Table(
-    'profiles', metadata,
+    'profiles',
+    metadata,
     sa.Column('id', sa.Integer, primary_key=True),
     sa.Column('first_name', sa.String),
     sa.Column('last_name', sa.String),
     sa.Column('user_id', sa.ForeignKey('users.id')),
 )
 address_table = sa.Table(
-    'addresses', metadata,
+    'addresses',
+    metadata,
     sa.Column('id', sa.Integer, primary_key=True),
     sa.Column('city', sa.String),
     sa.Column('street', sa.String),
 )
 user_to_address = sa.Table(
-    'user_to_address', metadata,
+    'user_to_address',
+    metadata,
     sa.Column('user_id', sa.ForeignKey(users_table.c.id), primary_key=True),
     sa.Column('address_id', sa.ForeignKey(address_table.c.id), primary_key=True),
 )
+sample_table = sa.Table('sample', metadata, sa.Column(sa.Integer, name='id'))
 
 
 class User(Model):

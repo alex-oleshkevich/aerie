@@ -12,9 +12,8 @@ Access http://localhost:8000 to list all users.
 Access http://localhost:8000/create to create a new user.
 """
 import os
-import typing as t
-
 import sqlalchemy as sa
+import typing as t
 from fastapi import Depends, FastAPI
 
 from aerie import Aerie, DbSession, Model

@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 import typing as t
-
-from sqlalchemy import MetaData, Table
+from sqlalchemy import MetaData
 from sqlalchemy.engine import Row
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.sql import Executable, Selectable
+from sqlalchemy.sql import Executable
 
-from aerie.models import metadata as shared_metadata, Model
-from aerie.queries import SelectQuery
+from aerie.models import metadata as shared_metadata
 from aerie.results import ResultProxy
 from aerie.schema import Schema
 from aerie.session import DbSession
@@ -67,7 +65,7 @@ class Aerie:
         """Establish a new transaction."""
         return self.engine.begin()
 
-    def execute(self, stmt: t.Union[str, Executable], params: t.Mapping = None) -> ResultProxy[Row]:
+    def execute(self, stmt: t.Union[str, Executable], params: t.Mapping = None) -> ResultProxy:
         """Execute an executable or raw SQL query."""
         return ResultProxy(self.engine, stmt, params)
 

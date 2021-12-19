@@ -33,8 +33,8 @@ def chunked(items: t.Iterable[ITEM], size: int) -> t.Generator[t.List[ITEM], Non
 def colorize(sql: str) -> str:
     try:
         import pygments
-        import pygments.lexers
         import pygments.formatters
+        import pygments.lexers
 
         lexer = pygments.lexers.get_lexer_by_name("sql")
         formatter = pygments.formatters.get_formatter_by_name("console")

@@ -42,7 +42,7 @@ async def main() -> None:
 
     # you can read db w/o transaction
     stmt = select(users).where(users.c.id == 3)
-    user_id3 = await db.query(stmt).one()
+    user_id3 = await db.execute(stmt).one()
     print('User with ID 3 has name: %s' % user_id3.name)
 
 

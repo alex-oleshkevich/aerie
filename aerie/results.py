@@ -1,38 +1,34 @@
 import typing as t
-
 from sqlalchemy import text
-from sqlalchemy.engine import Result
+from sqlalchemy.engine import Result, Row
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.sql import Executable
 
 from aerie.collections import Collection
 from aerie.utils import convert_exceptions
 
-T = t.TypeVar('T')
 
-
-class ResultProxy(t.Generic[T]):
+class ResultProxy:
     def __init__(self, engine: AsyncEngine, stmt: t.Union[str, Executable], params: t.Mapping = None) -> None:
-        self._text_query = isinstance(stmt, str)
         self._engine = engine
-        self._stmt = text(stmt) if self._text_query else stmt
+        self._stmt = text(stmt) if isinstance(stmt, str) else stmt
         self._params = params
 
-    async def all(self) -> Collection[T]:
+    async def all(self) -> Collection[Row]:
         result = await self._execute()
         return Collection(result.all())
 
-    async def one(self) -> T:
+    async def one(self) -> Row:
         with convert_exceptions():
             result = await self._execute()
             return result.one()
 
-    async def one_or_none(self) -> t.Optional[T]:
+    async def one_or_none(self) -> t.Optional[Row]:
         with convert_exceptions():
             result = await self._execute()
             return result.one_or_none()
 
-    async def first(self) -> t.Optional[T]:
+    async def first(self) -> t.Optional[Row]:
         result = await self._execute()
         return result.first()
 
@@ -62,5 +58,5 @@ class ResultProxy(t.Generic[T]):
         async with self._engine.begin() as connection:
             return await connection.execute(self._stmt, self._params)
 
-    def __await__(self) -> t.Generator[Result, None, None]:
+    def __await__(self) -> t.Generator[Result, None, Result]:
         return self._execute().__await__()
