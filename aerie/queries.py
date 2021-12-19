@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import sys
 import typing as t
-from sqlalchemy import Boolean, Column, exists, func
+from sqlalchemy import Boolean, Column, delete, exists, func, update
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import InstrumentedAttribute, joinedload, selectinload
-from sqlalchemy.sql import Select
+from sqlalchemy.sql import Executable, Select
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.sqltypes import NullType
 
@@ -26,13 +26,11 @@ class SelectQuery(t.Generic[M]):
         model: t.Type[M],
         executor: AsyncSession,
         base_stmt: Select = None,
-        returns_model: bool = None,
     ) -> None:
         self._model: t.Type[Base] = model
         self._executor = executor
         self._stmt: Select = select(model) if base_stmt is None else base_stmt
         self._is_session = isinstance(executor, AsyncSession)
-        self._returns_model = self._is_session if returns_model is None else returns_model
 
     def where(self, *conditions: ColumnElement[Boolean]) -> SelectQuery[M]:
         return self._clone(base_stmt=self._stmt.where(*conditions))
@@ -129,7 +127,7 @@ class SelectQuery(t.Generic[M]):
     async def one(self) -> M:
         with convert_exceptions():
             result = await self._execute(self._stmt)
-            return result.scalars().one() if self._returns_model else result.one()
+            return result.scalars().one()
 
     async def one_or_none(self) -> t.Optional[M]:
         with convert_exceptions():
@@ -161,18 +159,25 @@ class SelectQuery(t.Generic[M]):
         rows = await self.limit(page_size).offset(offset).all()
         return Page(list(rows), total, page, page_size)
 
+    async def update(self, **values: t.Any) -> None:
+        stmt = update(self._model).where(self._stmt.whereclause).values(**values)
+        await self._execute(stmt)
+
+    async def delete(self) -> None:
+        stmt = delete(self._model).where(self._stmt.whereclause)
+        await self._execute(stmt)
+
     async def execute(self) -> Result:
         return await self._execute(self._stmt)
 
-    async def _execute(self, stmt: Select, params: t.Mapping = None) -> Result:
+    async def _execute(self, stmt: Executable, params: t.Mapping = None) -> Result:
         return await self._executor.execute(stmt, params)
 
-    def _clone(self, *, base_stmt: Select, returns_model: bool = None) -> SelectQuery:
+    def _clone(self, *, base_stmt: Select) -> SelectQuery:
         return SelectQuery(
             model=self._model,
             executor=self._executor,
             base_stmt=base_stmt,
-            returns_model=returns_model,
         )
 
     def __await__(self) -> t.Generator[t.Any, None, Collection[M]]:

@@ -3,7 +3,7 @@ import pytest
 from aerie import NoResultsError, TooManyResultsError
 from aerie.database import Aerie
 from tests.conftest import databases
-from tests.tables import User
+from tests.tables import Address, User
 
 
 @pytest.mark.asyncio
@@ -107,3 +107,31 @@ async def test_exists(db: Aerie) -> None:
         async with session:
             assert await session.query(User).where(User.id == 1).exists() is True
             assert await session.query(User).where(User.id == -1).exists() is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('db', databases)
+async def test_update(db: Aerie) -> None:
+    async with db.session() as session:
+        async with session:
+            address = Address(id=10, city='10', street='10')
+            session.add(address)
+            await session.flush([address])
+            await session.query(Address).where(Address.city == '10').update(city='30')
+
+            assert await session.query(Address).where(Address.city == '10').exists() is False
+            assert await session.query(Address).where(Address.city == '30').exists() is True
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('db', databases)
+async def test_delete(db: Aerie) -> None:
+    async with db.session() as session:
+        async with session:
+            address = Address(id=10, city='10', street='10')
+            session.add(address)
+            await session.flush([address])
+            assert await session.query(Address).where(Address.city == '10').exists() is True
+
+            await session.query(Address).where(Address.city == '10').delete()
+            assert await session.query(Address).where(Address.city == '10').exists() is False
