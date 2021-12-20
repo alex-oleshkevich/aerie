@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 import itertools
 import statistics
+import typing as t
 from typing import Any, Callable, Dict, Generator, Generic, Iterable, List, Optional, Protocol, TypeVar, Union, overload
 
 from aerie.utils import chunked
@@ -160,12 +161,12 @@ class Collection(Generic[E], Iterable[E]):
     def as_list(self) -> List[E]:
         return list(self)
 
-    def choices(self, label_col: str = 'name', value_col: str = 'id') -> list[tuple[Any, Any]]:
+    def choices(self, label_col: str = 'name', value_col: str = 'id') -> list[t.Tuple[Any, Any]]:
         return [(attribute_reader(item, value_col), attribute_reader(item, label_col)) for item in self]
 
     def choices_dict(
         self, label_col: str = 'name', value_col: str = 'id', label_key: str = 'label', value_key: str = 'value'
-    ) -> list[dict[Any, Any]]:
+    ) -> list[t.Dict[Any, Any]]:
         return [
             {value_key: attribute_reader(item, value_col), label_key: attribute_reader(item, label_col)}
             for item in self

@@ -17,6 +17,24 @@ async def test_all(db: Aerie) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('db', databases)
+async def test_choices(db: Aerie) -> None:
+    async with db.session() as session:
+        users = await session.query(User).choices()
+        assert len(users) == 3
+        assert users[0] == (1, 'User One')
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('db', databases)
+async def test_choices_dict(db: Aerie) -> None:
+    async with db.session() as session:
+        users = await session.query(User).choices_dict()
+        assert len(users) == 3
+        assert users[0] == {'value': 1, 'label': 'User One'}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('db', databases)
 async def test_query_evaluates_to_all(db: Aerie) -> None:
     async with db.session() as session:
         users = await session.query(User)

@@ -142,6 +142,21 @@ class SelectQuery(t.Generic[M]):
         result = await self._execute(self._stmt)
         return Collection(result.scalars().all())
 
+    async def choices(self, label_column: str = 'name', value_column: str = 'id') -> t.List[t.Tuple[str, t.Any]]:
+        result = await self._execute(self._stmt)
+        return Collection(result.scalars().all()).choices(label_col=label_column, value_col=value_column)
+
+    async def choices_dict(
+        self, label_column: str = 'name', value_column: str = 'id', label_key: str = 'label', value_key: str = 'value'
+    ) -> list[t.Dict[t.Any, t.Any]]:
+        result = await self._execute(self._stmt)
+        return Collection(result.scalars().all()).choices_dict(
+            label_col=label_column,
+            value_col=value_column,
+            label_key=label_key,
+            value_key=value_key,
+        )
+
     async def exists(self) -> bool:
         stmt = select(exists(self._stmt))
         result = await self._execute(stmt)
