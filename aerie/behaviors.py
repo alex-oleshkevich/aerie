@@ -46,6 +46,12 @@ class Queryable(Base):
         await instance.save()  # type: ignore
         return instance
 
+    @classmethod
+    async def destroy(cls, *pk: t.Any, pk_column: str = 'id') -> None:
+        column = getattr(cls, pk_column)
+        for instance in await get_current_session().query(cls).where(column.in_(pk)).all():
+            await instance.delete()
+
     async def save(self, commit: bool = True) -> None:
         session = get_current_session()
         session.add(self)  # type: ignore

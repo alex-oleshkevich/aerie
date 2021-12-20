@@ -142,20 +142,20 @@ class SelectQuery(t.Generic[M]):
         result = await self._execute(self._stmt)
         return Collection(result.scalars().all())
 
-    async def exists(self, params: t.Mapping = None) -> bool:
+    async def exists(self) -> bool:
         stmt = select(exists(self._stmt))
-        result = await self._execute(stmt, params)
+        result = await self._execute(stmt)
         return result.scalar() is True
 
-    async def count(self, params: t.Mapping = None) -> int:
+    async def count(self) -> int:
         stmt = select(func.count('*')).select_from(self._stmt)
-        result = await self._execute(stmt, params)
+        result = await self._execute(stmt)
         count = result.scalar()
         return int(count) if count else 0
 
-    async def paginate(self, page: int = 1, page_size: int = 50, params: t.Mapping = None) -> Page:
+    async def paginate(self, page: int = 1, page_size: int = 50) -> Page:
         offset = (page - 1) * page_size
-        total = await self.count(params)
+        total = await self.count()
         rows = await self.limit(page_size).offset(offset).all()
         return Page(list(rows), total, page, page_size)
 

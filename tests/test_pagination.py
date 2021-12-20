@@ -60,11 +60,10 @@ def test_page_next_prev_pages() -> None:
 @pytest.mark.parametrize('db', databases)
 async def test_paginate(db: Aerie) -> None:
     async with db.session() as session:
-        async with session:
-            page = await session.query(User).paginate(2, 1)
-            assert page.total_rows == 3
-            assert len(page) == 1
-            assert next(page).id == 2
+        page = await session.query(User).paginate(2, 1)
+        assert page.total_rows == 3
+        assert len(page) == 1
+        assert next(page).id == 2
 
 
 def test_page_repr() -> None:

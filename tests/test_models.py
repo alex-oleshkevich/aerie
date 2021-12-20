@@ -71,3 +71,11 @@ async def test_model_save(db: Aerie) -> None:
         assert db_user.name == 'changed'
 
         await user.delete()
+
+
+@pytest.mark.asyncio
+async def test_model_destroy(db: Aerie) -> None:
+    async with db.session():
+        user = await User.create(id=100, name='Hundred')
+        await User.destroy(user.id)
+        assert await User.query().where(User.id == user.id).exists() is False
