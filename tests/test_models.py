@@ -1,8 +1,8 @@
 import pytest
 
 from aerie.base import Base
-from aerie.behaviors import AutoBigIntegerId, AutoIntegerId
 from aerie.database import Aerie
+from aerie.models import AutoBigIntegerId, AutoIntegerId
 from tests.tables import User
 
 

@@ -2,7 +2,7 @@ import sqlalchemy as sa
 import typing as t
 from sqlalchemy.orm import Mapped, relationship
 
-from aerie.behaviors import Model
+from aerie.models import Model
 
 metadata = sa.MetaData()
 users_table = sa.Table(
