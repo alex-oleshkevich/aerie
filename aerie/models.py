@@ -1,12 +1,14 @@
 import sqlalchemy as sa
 import typing as t
+from sqlalchemy import Boolean, inspect
+from sqlalchemy.sql import ColumnElement
 
 from aerie.base import Base
 from aerie.collections import Collection
 from aerie.queries import SelectQuery
 from aerie.session import get_current_session
 
-C = t.TypeVar('C', bound=Base)
+C = t.TypeVar('C', bound='Model')
 
 
 class AutoIntegerId:
@@ -19,14 +21,14 @@ class AutoBigIntegerId:
     id = sa.Column(sa.BigInteger, primary_key=True, autoincrement=True)
 
 
-class _QueryProperty:
+class _QueryProperty(t.Generic[C]):
     def __get__(self, obj: t.Optional[C], type: t.Type[C]) -> SelectQuery[C]:
         return get_current_session().query(type)
 
 
-class Queryable(Base):
+class Model(Base):
     __abstract__ = True
-    query = _QueryProperty()
+    query = _QueryProperty[C]()
 
     @classmethod
     async def first(cls: t.Type[C]) -> t.Optional[C]:
@@ -47,9 +49,25 @@ class Queryable(Base):
         return await get_current_session().query(cls).where(column == pk).one_or_none()
 
     @classmethod
-    async def create(cls: t.Type[C], **values: t.Any) -> C:
+    async def get_or_create(
+        cls: t.Type[C],
+        where: ColumnElement[Boolean],
+        values: t.Mapping[str, t.Any],
+        autoflush: bool = True,
+        autocommit: bool = False,
+    ) -> C:
+        instance = await get_current_session().query(cls).where(where).one_or_none()
+        if not instance:
+            instance = await cls.create(autoflush=autoflush, autocommit=autocommit, **values)
+        return instance
+
+    @classmethod
+    async def create(cls: t.Type[C], autoflush: bool = True, autocommit: bool = False, **values: t.Any) -> C:
         instance = cls(**values)  # type: ignore
-        await instance.save()  # type: ignore
+        get_current_session().add(instance)
+        if autoflush:
+            await get_current_session().flush([instance])
+        await instance.save(commit=autocommit)  # type: ignore
         return instance
 
     @classmethod
@@ -74,6 +92,14 @@ class Queryable(Base):
         session = get_current_session()
         await session.refresh(self)
 
+    def __repr__(self) -> str:
+        identity = inspect(self).identity
+        if identity is None:
+            pk = f"transient {id(self)}"
+        elif len(identity) > 1:
+            pk = f'pk={identity}'
+        else:
+            pk = ", ".join(str(value) for value in identity)
+            pk = 'pk=' + pk
 
-class Model(Queryable, Base):
-    __abstract__ = True
+        return f"<{type(self).__name__}: {pk}>"

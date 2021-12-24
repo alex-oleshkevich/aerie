@@ -2,7 +2,7 @@ import sqlalchemy as sa
 import typing as t
 from sqlalchemy.orm import Mapped, relationship
 
-from aerie.models import Model
+from aerie.models import AutoBigIntegerId, AutoIntegerId, Model
 
 metadata = sa.MetaData()
 users_table = sa.Table(
@@ -64,3 +64,11 @@ class UserToAddress(Model):
     __tablename__ = 'user_to_address'
     user_id: Mapped[int] = sa.Column(sa.ForeignKey('users.id'), primary_key=True)
     address_id: Mapped[int] = sa.Column(sa.ForeignKey('addresses.id'), primary_key=True)
+
+
+class AutoIntModel(AutoIntegerId, Model):
+    __tablename__ = 'example_autoint'
+
+
+class AutoBigIntModel(AutoBigIntegerId, Model):
+    __tablename__ = 'example_autobigint'

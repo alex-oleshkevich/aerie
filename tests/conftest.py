@@ -64,5 +64,3 @@ async def create_tables() -> t.AsyncGenerator[None, None]:
             )
         )
     yield
-    # for db in databases:
-    #     await db.schema.drop_tables()

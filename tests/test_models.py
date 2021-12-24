@@ -1,9 +1,8 @@
 import pytest
+import sqlalchemy as sa
 
-from aerie.base import Base
 from aerie.database import Aerie
-from aerie.models import AutoBigIntegerId, AutoIntegerId
-from tests.tables import User
+from tests.tables import AutoBigIntModel, AutoIntModel, User, UserToAddress
 
 
 @pytest.mark.asyncio
@@ -29,10 +28,36 @@ async def test_model_get(db: Aerie) -> None:
 
 
 @pytest.mark.asyncio
+async def test_model_first(db: Aerie) -> None:
+    async with db.session():
+        user = await User.first()
+        assert user
+        assert user.id == 1
+
+
+@pytest.mark.asyncio
+async def test_model_refresh(db: Aerie) -> None:
+    async with db.session() as session:
+        user = await User.create()
+        await User.query.where(User.id == user.id).update(name='updated')
+        await user.refresh()
+        assert user.name == 'updated'
+        await session.rollback()
+
+
+@pytest.mark.asyncio
 async def test_model_get_or_none(db: Aerie) -> None:
     async with db.session():
         user = await User.get_or_none(100500)
         assert not user
+
+
+@pytest.mark.asyncio
+async def test_model_get_or_create(db: Aerie) -> None:
+    async with db.session() as session:
+        user = await User.get_or_create(User.name == 'autocreated', {'name': 'autocreated'})
+        assert user.name == 'autocreated'
+        await session.rollback()
 
 
 @pytest.mark.asyncio
@@ -84,14 +109,27 @@ async def test_model_destroy(db: Aerie) -> None:
 
 
 def test_autointeger_id() -> None:
-    class ExampleAutoIntModel(AutoIntegerId, Base):
-        __tablename__ = 'example_autoint'
-
-    assert hasattr(ExampleAutoIntModel, 'id')
+    info = sa.inspect(AutoBigIntModel)
+    assert hasattr(AutoIntModel, 'id')
+    assert isinstance(info.c.id.type, sa.Integer)
 
 
 def test_bigautointeger_id() -> None:
-    class ExampleBigAutoIntModel(AutoBigIntegerId, Base):
-        __tablename__ = 'example_bigautoint'
+    info = sa.inspect(AutoBigIntModel)
+    assert hasattr(AutoBigIntModel, 'id')
+    assert isinstance(info.c.id.type, sa.BigInteger)
 
-    assert hasattr(ExampleBigAutoIntModel, 'id')
+
+@pytest.mark.asyncio
+async def test_repr(db: Aerie) -> None:
+    async with db.session():
+        new_user = User(id=42, name='user')
+        assert repr(new_user) == f'<User: transient {id(new_user)}>'
+
+        user = await User.first()
+        assert user
+        assert repr(user) == '<User: pk=1>'
+
+        many_pk = await UserToAddress.first()
+        assert many_pk
+        assert repr(many_pk) == '<UserToAddress: pk=(1, 1)>'
