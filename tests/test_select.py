@@ -1,3 +1,4 @@
+import io
 import pytest
 
 from aerie import NoResultsError, TooManyResultsError
@@ -143,8 +144,16 @@ async def test_delete(db: Aerie) -> None:
 
 
 @pytest.mark.asyncio
-async def test_dump(db: Aerie) -> None:
+async def test_to_string(db: Aerie) -> None:
     async with db.session() as session:
         query = session.query(User).where(User.id == 1)
         assert query.to_string() == 'SELECT users.id, users.name \nFROM users \nWHERE users.id = 1'
         assert str(query) == 'SELECT users.id, users.name \nFROM users \nWHERE users.id = 1'
+
+
+@pytest.mark.asyncio
+async def test_dump(db: Aerie) -> None:
+    async with db.session() as session:
+        writer = io.StringIO()
+        session.query(User).where(User.id == 1).dump(writer)  # noqa
+        assert writer.getvalue() == 'SELECT users.id, users.name \nFROM users \nWHERE users.id = 1'
