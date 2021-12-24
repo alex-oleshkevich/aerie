@@ -58,6 +58,21 @@ class Page(t.Generic[M]):
         """The 1-based index of the last item on this page."""
         return min(self.start_index + self.page_size - 1, self.total_rows)
 
+    def iter_pages(
+        self, left_edge: int = 3, left_current: int = 3, right_current: int = 3, right_edge: int = 3
+    ) -> t.Generator[t.Optional[int], None, None]:
+        last = 0
+        for number in range(1, self.total_pages + 1):
+            if (
+                number <= left_edge
+                or (number >= self.page - left_current - 1 and number < self.page + right_current)
+                or number > self.total_pages - right_edge
+            ):
+                if last + 1 != number:
+                    yield None
+                yield number
+                last = number
+
     def __iter__(self) -> t.Iterator[M]:
         return iter(self.rows)
 

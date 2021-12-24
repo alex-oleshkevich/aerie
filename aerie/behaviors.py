@@ -9,22 +9,28 @@ from aerie.session import get_current_session
 C = t.TypeVar('C', bound=Base)
 
 
-class AutoIntegerId(Base):
+class AutoIntegerId:
     __abstract__ = True
     id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
 
 
-class AutoBigIntegerId(Base):
+class AutoBigIntegerId:
     __abstract__ = True
     id = sa.Column(sa.BigInteger, primary_key=True, autoincrement=True)
 
 
+class _QueryProperty:
+    def __get__(self, obj: t.Optional[C], type: t.Type[C]) -> SelectQuery[C]:
+        return get_current_session().query(type)
+
+
 class Queryable(Base):
     __abstract__ = True
+    query = _QueryProperty()
 
     @classmethod
-    def query(cls: t.Type[C]) -> SelectQuery[C]:
-        return get_current_session().query(cls)
+    async def first(cls: t.Type[C]) -> t.Optional[C]:
+        return await get_current_session().query(cls).first()
 
     @classmethod
     async def all(cls: t.Type[C]) -> Collection[C]:
@@ -67,3 +73,7 @@ class Queryable(Base):
     async def refresh(self) -> None:
         session = get_current_session()
         await session.refresh(self)
+
+
+class Model(Queryable, Base):
+    __abstract__ = True

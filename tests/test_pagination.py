@@ -66,6 +66,17 @@ async def test_paginate(db: Aerie) -> None:
         assert next(page).id == 2
 
 
+def test_iter_pages() -> None:
+    page = Page(rows=[x for x in range(200)], total_rows=200, page_size=10, page=1)
+    assert list(page.iter_pages()) == [1, 2, 3, None, 18, 19, 20]
+
+    page = Page(rows=[x for x in range(200)], total_rows=200, page_size=10, page=10)
+    assert list(page.iter_pages()) == [1, 2, 3, None, 6, 7, 8, 9, 10, 11, 12, None, 18, 19, 20]
+
+    page = Page(rows=[x for x in range(200)], total_rows=200, page_size=10, page=20)
+    assert list(page.iter_pages()) == [1, 2, 3, None, 16, 17, 18, 19, 20]
+
+
 def test_page_repr() -> None:
     rows = [1, 2]
     page = Page(rows, total_rows=2, page=1, page_size=2)
