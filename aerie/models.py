@@ -8,7 +8,7 @@ from aerie.collections import Collection
 from aerie.queries import SelectQuery
 from aerie.session import get_current_session
 
-C = t.TypeVar('C', bound='Model')
+C = t.TypeVar('C', bound='BaseModel')
 
 
 class AutoIntegerId:
@@ -26,7 +26,7 @@ class _QueryProperty(t.Generic[C]):
         return get_current_session().query(type)
 
 
-class Model(Base):
+class BaseModel(Base):
     __abstract__ = True
     query = _QueryProperty[C]()
 

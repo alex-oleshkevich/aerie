@@ -2,7 +2,7 @@ import sqlalchemy as sa
 import typing as t
 from sqlalchemy.orm import Mapped, relationship
 
-from aerie.models import AutoBigIntegerId, AutoIntegerId, Model
+from aerie.models import AutoBigIntegerId, AutoIntegerId, BaseModel
 
 metadata = sa.MetaData()
 users_table = sa.Table(
@@ -35,7 +35,7 @@ user_to_address = sa.Table(
 sample_table = sa.Table('sample', metadata, sa.Column(sa.Integer, name='id'))
 
 
-class User(Model):
+class User(BaseModel):
     __tablename__ = 'users'
     id = sa.Column(sa.BigInteger, primary_key=True)
     name = sa.Column(sa.String)
@@ -43,7 +43,7 @@ class User(Model):
     addresses: Mapped[list['Address']] = relationship("UserToAddress")
 
 
-class Profile(Model):
+class Profile(BaseModel):
     __tablename__ = 'profiles'
     id = sa.Column(sa.Integer, primary_key=True)
     first_name = sa.Column(sa.String)
@@ -52,7 +52,7 @@ class Profile(Model):
     user: Mapped[t.Optional[User]] = relationship("User", back_populates="profile")
 
 
-class Address(Model):
+class Address(BaseModel):
     __tablename__ = 'addresses'
     id = sa.Column(sa.Integer, primary_key=True)
     city = sa.Column(sa.String)
@@ -60,15 +60,15 @@ class Address(Model):
     users: Mapped[list[User]] = relationship("UserToAddress")
 
 
-class UserToAddress(Model):
+class UserToAddress(BaseModel):
     __tablename__ = 'user_to_address'
     user_id: Mapped[int] = sa.Column(sa.ForeignKey('users.id'), primary_key=True)
     address_id: Mapped[int] = sa.Column(sa.ForeignKey('addresses.id'), primary_key=True)
 
 
-class AutoIntModel(AutoIntegerId, Model):
+class AutoIntModel(AutoIntegerId, BaseModel):
     __tablename__ = 'example_autoint'
 
 
-class AutoBigIntModel(AutoBigIntegerId, Model):
+class AutoBigIntModel(AutoBigIntegerId, BaseModel):
     __tablename__ = 'example_autobigint'
