@@ -1,5 +1,6 @@
 import io
 import pytest
+from sqlalchemy.exc import MissingGreenlet
 
 from aerie import NoResultsError, TooManyResultsError
 from aerie.database import Aerie
@@ -157,3 +158,23 @@ async def test_dump(db: Aerie) -> None:
         writer = io.StringIO()
         session.query(User).where(User.id == 1).dump(writer)  # noqa
         assert writer.getvalue() == 'SELECT users.id, users.name \nFROM users \nWHERE users.id = 1'
+
+
+@pytest.mark.asyncio
+async def test_only(db: Aerie) -> None:
+    async with db.session() as session:
+        user = await session.query(User).only(User.id).first()
+        assert user
+        assert user.id == 1
+        with pytest.raises(MissingGreenlet):
+            assert user.name
+
+
+@pytest.mark.asyncio
+async def test_only_with_strings(db: Aerie) -> None:
+    async with db.session() as session:
+        user = await session.query(User).only('id').first()
+        assert user
+        assert user.id == 1
+        with pytest.raises(MissingGreenlet):
+            assert user.name

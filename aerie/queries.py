@@ -6,7 +6,7 @@ from sqlalchemy import Boolean, Column, delete, exists, func, update
 from sqlalchemy.engine import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import InstrumentedAttribute, joinedload, selectinload
+from sqlalchemy.orm import InstrumentedAttribute, joinedload, load_only, selectinload
 from sqlalchemy.sql import Executable, Select
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.sqltypes import NullType
@@ -113,6 +113,9 @@ class SelectQuery(t.Generic[M]):
     # def union_all(self, *q: SelectQuery) -> SelectQuery:
     #     self._stmt = self._stmt.union_all(*q)
     #     return self
+
+    def only(self, *columns: t.Union[str, Column]) -> SelectQuery[M]:
+        return self.options(load_only(*columns))
 
     def dump(self, writer: t.IO[str] = sys.stdout, colorize_sql: bool = True) -> SelectQuery[M]:
         sql = str(self)
