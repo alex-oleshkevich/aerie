@@ -28,25 +28,28 @@ class _QueryProperty(t.Generic[C]):
 
 class BaseModel(Base):
     __abstract__ = True
-    query = _QueryProperty[C]()
+
+    @classmethod
+    def query(cls: t.Type[C]) -> SelectQuery[C]:
+        return get_current_session().query(cls)
 
     @classmethod
     async def first(cls: t.Type[C]) -> t.Optional[C]:
-        return await get_current_session().query(cls).first()
+        return await cls.query().first()
 
     @classmethod
     async def all(cls: t.Type[C]) -> Collection[C]:
-        return await get_current_session().query(cls).all()
+        return await cls.query().all()
 
     @classmethod
     async def get(cls: t.Type[C], pk: t.Any, pk_column: str = 'id') -> C:
         column = getattr(cls, pk_column)
-        return await get_current_session().query(cls).where(column == pk).one()
+        return await cls.query().where(column == pk).one()
 
     @classmethod
     async def get_or_none(cls: t.Type[C], pk: t.Any, pk_column: str = 'id') -> t.Optional[C]:
         column = getattr(cls, pk_column)
-        return await get_current_session().query(cls).where(column == pk).one_or_none()
+        return await cls.query().where(column == pk).one_or_none()
 
     @classmethod
     async def get_or_create(
@@ -56,7 +59,7 @@ class BaseModel(Base):
         autoflush: bool = True,
         autocommit: bool = False,
     ) -> C:
-        instance = await get_current_session().query(cls).where(where).one_or_none()
+        instance = await cls.query().where(where).one_or_none()
         if not instance:
             instance = await cls.create(autoflush=autoflush, autocommit=autocommit, **values)
         return instance
@@ -73,7 +76,7 @@ class BaseModel(Base):
     @classmethod
     async def destroy(cls, *pk: t.Any, pk_column: str = 'id') -> None:
         column = getattr(cls, pk_column)
-        for instance in await get_current_session().query(cls).where(column.in_(pk)).all():
+        for instance in await cls.query().where(column.in_(pk)).all():
             await instance.delete()
 
     async def save(self, commit: bool = True) -> None:

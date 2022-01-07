@@ -15,7 +15,7 @@ async def test_model_all(db: Aerie) -> None:
 @pytest.mark.asyncio
 async def test_model_creates_query(db: Aerie) -> None:
     async with db.session():
-        user = await User.query.first()
+        user = await User.first()
         assert user
         assert user.id == 1
 
@@ -39,7 +39,7 @@ async def test_model_first(db: Aerie) -> None:
 async def test_model_refresh(db: Aerie) -> None:
     async with db.session() as session:
         user = await User.create()
-        await User.query.where(User.id == user.id).update(name='updated')
+        await User.query().where(User.id == user.id).update(name='updated')
         await user.refresh()
         assert user.name == 'updated'
         await session.rollback()
@@ -69,7 +69,7 @@ async def test_model_create_delete(db: Aerie) -> None:
         assert db_user.name == user.name
 
         await user.delete()
-        assert not await User.query.where(User.id == user.id).exists()
+        assert not await User.query().where(User.id == user.id).exists()
 
 
 @pytest.mark.asyncio
@@ -105,7 +105,7 @@ async def test_model_destroy(db: Aerie) -> None:
     async with db.session():
         user = await User.create(id=100, name='Hundred')
         await User.destroy(user.id)
-        assert await User.query.where(User.id == user.id).exists() is False
+        assert await User.query().where(User.id == user.id).exists() is False
 
 
 def test_autointeger_id() -> None:
