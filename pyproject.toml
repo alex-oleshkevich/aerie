@@ -1,0 +1,97 @@
+[project]
+name = "aerie"
+version = "1.0.0"
+description = "Async SQLAlchemy toolkit for PostgreSQL: session manager, typed queries and pagination."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.14"
+authors = [{ name = "Alex Oleshkevich", email = "alex.oleshkevich@gmail.com" }]
+keywords = ["sqlalchemy", "asyncio", "postgresql", "database", "orm", "fastapi"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: AsyncIO",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Database",
+    "Typing :: Typed",
+]
+dependencies = [
+    "sqlalchemy[asyncio]>=2.1.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/alex-oleshkevich/aerie"
+Repository = "https://github.com/alex-oleshkevich/aerie"
+Issues = "https://github.com/alex-oleshkevich/aerie/issues"
+
+[project.optional-dependencies]
+fastapi = ["fastapi>=0.118.0"]
+starlette = ["starlette>=0.40"]
+
+[dependency-groups]
+dev = [
+    "anyio>=4.15",
+    "fastapi>=0.118.0",
+    "mypy>=1.11",
+    "pygments>=2.19.2",
+    "psycopg[binary,pool]>=3.2.10",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.13.3",
+    "sqlparse>=0.5",
+    "types-pygments>=2.19",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.10,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.ruff.lint.per-file-ignores]
+# `__repr_attrs__` is a plain list by design, and the descriptor test must touch
+# the attribute without binding it.
+"tests/**/*.py" = ["RUF012", "B018"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+# The engine is session-scoped, so its connections must live in one event loop.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.14"
+files = "src, tests"
+strict = true
+strict_equality = true
+extra_checks = true
+implicit_reexport = true
+
+[tool.coverage.run]
+branch = true
+source = ["src/aerie"]
+relative_files = true
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+skip_covered = true
+exclude_also = [
+    "if typing.TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "\\.\\.\\.$",
+]

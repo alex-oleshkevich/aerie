@@ -1,0 +1,48 @@
+name: QA
+
+on:
+    push:
+        branches: [master]
+    pull_request:
+        branches: [master]
+
+jobs:
+    lint:
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v4
+            -   uses: astral-sh/setup-uv@v6
+                with:
+                    python-version: "3.14"
+            -   run: uv sync --locked
+            -   run: uvx prek run --all-files --show-diff-on-failure
+
+    tests:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                python-version: ["3.14"]
+        services:
+            postgres:
+                image: postgres:18
+                env:
+                    POSTGRES_USER: postgres
+                    POSTGRES_PASSWORD: postgres
+                    POSTGRES_DB: testdb
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd "pg_isready -U postgres"
+                    --health-interval 5s
+                    --health-timeout 3s
+                    --health-retries 10
+        env:
+            DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/testdb
+        steps:
+            -   uses: actions/checkout@v4
+            -   uses: astral-sh/setup-uv@v6
+                with:
+                    python-version: ${{ matrix.python-version }}
+            -   run: uv sync --locked
+            -   run: uv run pytest --cov --cov-report=term-missing
