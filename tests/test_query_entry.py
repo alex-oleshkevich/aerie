@@ -16,6 +16,15 @@ from aerie.querying import EntityQuery, Query, query
 from tests.models import Post, Tag
 
 
+class PostQuery(EntityQuery[Post]):
+    def in_blog(self, blog_id: int) -> typing.Self:
+        return self.where(Post.blog_id == blog_id)
+
+
+class DraftPostQuery(PostQuery):
+    pass
+
+
 class TestEntryPoint:
     def test_rejects_an_unsupported_target(self) -> None:
         with pytest.raises(TypeError, match="expects an ORM model"):
@@ -27,6 +36,33 @@ class TestEntryPoint:
         assert isinstance(posts, EntityQuery)
         assert posts.model is Post
         assert "FROM test_posts" in str(posts.statement)
+
+    def test_opens_a_query_class_bound_to_its_model(self) -> None:
+        posts = query(PostQuery)
+
+        assert type(posts) is PostQuery
+        assert posts.model is Post
+        assert "FROM test_posts" in str(posts.statement)
+
+    def test_a_query_class_inherits_its_parents_model(self) -> None:
+        assert query(DraftPostQuery).model is Post
+
+    def test_builders_keep_the_query_class(self) -> None:
+        posts = query(PostQuery).in_blog(1).order_by(Post.title).limit(5)
+
+        assert type(posts) is PostQuery
+        assert "test_posts.blog_id" in str(posts.statement)
+
+    def test_rejects_a_query_class_without_a_model(self) -> None:
+        with pytest.raises(TypeError, match="binds no model"):
+            EntityQuery.for_model()
+
+    async def test_reads_through_a_query_class(
+        self, dbsession: AsyncSession, seeded_posts: tuple[Post, Post, Post]
+    ) -> None:
+        titles = await query(PostQuery).in_blog(1).order_by(Post.title).select(Post.title).all(dbsession)
+
+        assert titles == sorted(post.title for post in seeded_posts if post.blog_id == 1)
 
     def test_each_call_is_a_fresh_query(self, dbsession: AsyncSession) -> None:
         assert query(Post) is not query(Post)

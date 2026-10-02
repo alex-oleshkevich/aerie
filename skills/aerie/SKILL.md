@@ -94,6 +94,19 @@ def published(query: EntityQuery[Post]) -> EntityQuery[Post]:
 recent = await query(Post).pipe(published).order_by(Post.created_at.desc()).all(session)
 ```
 
+A model's own vocabulary fits a query class: subclass `EntityQuery[Model]`, return
+`typing.Self` from builders, and open it with `query(PostQuery)`. Builders keep the
+subclass, so the methods chain:
+
+```python
+class PostQuery(EntityQuery[Post]):
+    def published(self) -> typing.Self:
+        return self.where(Post.published)
+
+
+recent = await query(PostQuery).published().order_by(Post.created_at.desc()).all(session)
+```
+
 ### Aggregates and mutations follow the whole query
 
 `sum`/`avg`/`min`/`max` add the aggregand to the query's own target list, so LIMIT,

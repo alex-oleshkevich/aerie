@@ -174,6 +174,23 @@ posts = await (
 )
 ```
 
+### Group a model's filters in a query class
+
+Subclass `EntityQuery[Model]` and return `typing.Self` from each method. `query()`
+opens the class with its model already bound, and every builder keeps the subclass:
+
+```python
+class PostQuery(EntityQuery[Post]):
+    def published(self) -> typing.Self:
+        return self.where(Post.published)
+
+    def by(self, author_id: int) -> typing.Self:
+        return self.where(Post.author_id == author_id)
+
+
+posts = await query(PostQuery).published().by(author_id).order_by(Post.title).all(session)
+```
+
 ### Update or delete the rows a query matches
 
 ```python
@@ -259,7 +276,7 @@ Terminals take the session and run the query: `all`, `first`, `first_or_raise`,
 `one`, `one_or_none`, `one_or_raise`, `exists`, `count`, `sum`, `avg`, `min`, `max`,
 `batches`, `iter`, `paginate`, `execute`.
 
-`EntityQuery` (from `query(Model)`) adds `pk`, `map`, `update`, `delete`,
+`EntityQuery` (from `query(Model)` or `query(QueryClass)`) adds `pk`, `map`, `update`, `delete`,
 `cursor_page`, `batches_by` and `iter_by`. `ScalarQuery` adds `set`. `sql()` returns
 the compiled SQL of any query.
 

@@ -15,6 +15,7 @@ if typing.TYPE_CHECKING:
 
     from aerie.querying import EntityQuery, ScalarQuery, TupleQuery, query
     from tests.models import Post
+    from tests.test_query_entry import PostQuery
 
     def _select_narrows_the_result_type(session: AsyncSession) -> None:
         typing.assert_type(query(Post), EntityQuery[Post])
@@ -40,6 +41,12 @@ if typing.TYPE_CHECKING:
         typing.assert_type(query(Post).when_not(False, lambda: Post.blog_id == 1), EntityQuery[Post])
         typing.assert_type(query(Post).limit(1).offset(1).order_by(Post.title), EntityQuery[Post])
         typing.assert_type(query(Post).select(Post.title).where(Post.blog_id == 1), ScalarQuery[str])
+
+    async def _query_classes_keep_their_type(session: AsyncSession) -> None:
+        typing.assert_type(query(PostQuery), PostQuery)
+        typing.assert_type(PostQuery.for_model(), PostQuery)
+        typing.assert_type(query(PostQuery).in_blog(1).order_by(Post.title), PostQuery)
+        typing.assert_type(await query(PostQuery).in_blog(1).one_or_none(session), Post | None)
 
     async def _map_overloads(session: AsyncSession) -> None:
         typing.assert_type(await query(Post).map(session, Post.id), dict[int, Post])

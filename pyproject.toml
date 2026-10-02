@@ -1,6 +1,6 @@
 [project]
 name = "aerie"
-version = "1.0.0"
+version = "1.0.1"
 description = "Async SQLAlchemy toolkit for PostgreSQL: session manager, typed queries and pagination."
 readme = "README.md"
 license = "MIT"

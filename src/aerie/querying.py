@@ -401,7 +401,9 @@ class EntityQuery[M: DeclarativeBase](Query[M]):
     model: type[M]
 
     @classmethod
-    def for_model(cls, model: type[M]) -> EntityQuery[M]:
+    def for_model(cls, model: type[M] | None = None) -> typing.Self:
+        """Open a query over `model`, or over the model a subclass binds in `EntityQuery[Model]`."""
+        model = model or cls._bound_model()
         # Nothing loads implicitly: an un-preloaded relationship must fail with an
         # error that names the attribute, not a MissingGreenlet from the plumbing.
         return cls(
@@ -410,6 +412,17 @@ class EntityQuery[M: DeclarativeBase](Query[M]):
             decoder=ScalarDecoder[M](),
             model=model,
         )
+
+    @classmethod
+    def _bound_model(cls) -> type[M]:
+        for klass in cls.__mro__:
+            for base in getattr(klass, "__orig_bases__", ()):
+                origin = typing.get_origin(base)
+                if isinstance(origin, type) and issubclass(origin, EntityQuery):
+                    model = typing.get_args(base)[0]
+                    if isinstance(model, type):
+                        return typing.cast(type[M], model)
+        raise TypeError(f"{cls.__name__} binds no model: subclass EntityQuery[Model] or pass the model")
 
     @typing.overload
     async def map[K](self, session: AsyncSession, key: sa.SQLColumnExpression[K], /) -> dict[K, M]: ...
@@ -558,13 +571,21 @@ def query[M: DeclarativeBase](model: type[M], /) -> EntityQuery[M]: ...
 
 
 @typing.overload
+def query[Q: EntityQuery[typing.Any]](query_class: type[Q], /) -> Q: ...
+
+
+@typing.overload
 def query(statement: AnyStatement, /) -> Query[typing.Any]: ...
 
 
-def query(target: type[DeclarativeBase] | AnyStatement, /) -> typing.Any:
-    """Open a model-bound or model-free query without binding an execution session."""
+def query(target: type[DeclarativeBase | EntityQuery[typing.Any]] | AnyStatement, /) -> typing.Any:
+    """Open a model-bound, query-class-bound or model-free query without binding an execution session."""
+    if isinstance(target, type) and issubclass(target, EntityQuery):
+        return target.for_model()
     if isinstance(target, type):
         return EntityQuery.for_model(target)
     if not isinstance(target, (sa.Select, sa.Insert, sa.Update, sa.Delete)):
-        raise TypeError("query() expects an ORM model or a SQLAlchemy SELECT/INSERT/UPDATE/DELETE")
+        raise TypeError(
+            "query() expects an ORM model, an EntityQuery subclass or a SQLAlchemy SELECT/INSERT/UPDATE/DELETE"
+        )
     return Query(_statement=target, decoder=_decoder_for_statement(target))
